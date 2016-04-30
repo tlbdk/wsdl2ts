@@ -28,13 +28,16 @@ var sample = {
         },
         "Fault": { 
         },    
-    }  
+    },
+    "soap:SameName": "name1",
+    "soap2:SameName": "name2"
 };
 
 var definition = {
     "Envelope$namespace": "soap",
     "Envelope$attributes": {
         "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
+        "xmlns:soap2": "http://www.w3.org/2003/05/soap-envelope/",
         "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding",
     },
     "Envelope$order": ["Header", "Body"],
@@ -53,7 +56,7 @@ var definition = {
             },
             "Fault": { 
             }    
-        }    
+        }
     }
 };
 
