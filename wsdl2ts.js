@@ -48,6 +48,7 @@ var definition = {
                 "xmlns:stuff": "http://www.w3.org/2003/05/soap-encoding"
             },
             "values": {
+                "value$namespace": "stuff",
                 "value": [""]
             },
             "Fault": { 
@@ -60,8 +61,6 @@ var definition = {
 var xml = toXML(sample, definition, "Envelope");
 console.log("'"+ xml + "'");
 var obj = fromXML(xml, definition);
-
-
 
 function toXML(obj, definition, parentName, level, indentation) {
     definition = definition ? definition : {};
@@ -85,7 +84,7 @@ function toXML(obj, definition, parentName, level, indentation) {
         
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value, index) {
-            result += toXML(value, definition[parentName], parentName, level);
+            result += toXML(value, definition, parentName, level);
         });
         
     } else if(typeof obj === "object") {
@@ -121,6 +120,12 @@ function fromXML(xml, definition) {
     var names = [];
     
     parser.on('startElement', function(name, attributes) {
+        var ns = name.split(":");
+        if(ns.length > 1) {
+            name = ns[1];
+            ns = ns[0];
+        }
+        
         if(names.length > 0) {
             objects.push(currentObject);
             var nextObject = {};
@@ -150,7 +155,14 @@ function fromXML(xml, definition) {
     });
     
     parser.on('endElement', function(name){
+        var ns = name.split(":");
+        if(ns.length > 1) {
+            name = ns[1];
+            ns = ns[0];
+        }
+        
         if(objects.length > 0) {
+            names.pop(); // TODO: Validate that poped value matches name
             currentObject = objects.pop();
                  
             if(Array.isArray(currentObject[name])) {
@@ -169,8 +181,6 @@ function fromXML(xml, definition) {
                     // TODO: Save "<tag>text<subtag>" type text
                 }
             }
-            
-            names.pop(); // TODO: Validate that poped value matches name
         }
         currentValue = "";
     });
