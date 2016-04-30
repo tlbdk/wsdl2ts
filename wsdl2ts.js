@@ -1,68 +1,122 @@
+'use strict';
+require('es6-shim');
+var expat = require('node-expat');
+
 // https://github.com/buglabs/node-xml2json
 // https://github.com/vpulim/node-soap
 
 var sample = {
-    "soap:Envelope$attibutes": {
+    "Header": {    
+    },
+    "Body": {
+        "value": "stuff",
+        "values": {
+            "value": ["a", "b"]
+        },
+        "Fault": { 
+        },    
+    }  
+};
+
+var definition = {
+    "Envelope$namespace": "soap",
+    "Envelope$attributes": {
         "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
         "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding",
     },
-    "soap:Envelope": {
-        "soap:Header": {    
-        },
-        "soap:Body": {
-            "value": "stuff",
-            "values$attibutes": { 
-                "xmlns:stuff": "morestuff"
+    "Envelope$order": ["Header", "Body"],
+    "Envelope": {
+        "Header$namespace": "soap",  
+        "Header": {},
+        "Body$namespace": "soap",
+        "Body": {
+            "value": "string",
+            "values$attributes": {
+                "xmlns:stuff": "http://www.w3.org/2003/05/soap-encoding"
             },
             "values": {
                 "value": [""]
             },
-            "soap:Fault": { 
-            },    
-        },
-         
-    },
-    "soap:Envelope$order": ["$soap:encodingStyle", "$xmlns:soap","soap:Header", "soap:Body"]
-    
+            "Fault": { 
+            }    
+        }    
+    }
 };
 
 
-function toXML(parentObj) {
+var xml = toXML(sample, definition, "Envelope");
+var obj = fromXML(sample, definition);
+
+console.log("'"+ xml + "'");
+
+function toXML(obj, definition, parentName, level, indentation) {
+    definition = definition ? definition : {};
+    level = level ? level : 0;
+    indentation = indentation ? indentation : 2;
+    
     var result = "";
-    var order = parentObj["$order"];
-    var keys = Object.getOwnPropertyNames(parentObj);
-    var attibutes = parentObj["$"];
+    var namespace = definition[parentName + "$namespace"] ? definition[parentName + "$namespace"] + ":" : "";
+    var attributes = definition[parentName + "$attributes"] || {};
     
-    if(order) {
-        keys = keys.sort(function(a, b) {
-            order.indexOf(a) - order.indexOf(b)
-        });
-        attibutes = attibutes.sort(function(a, b) {
-            order.indexOf("$" + a) - order.indexOf("$" + b)
-        });
-    }
+    var startElement = "<" + namespace +  parentName;
+    Object.getOwnPropertyNames(attributes).forEach(function(key, index){
+        startElement += " " + key + '="' + attributes[key] + '"';
+    });
+    startElement += ">";
     
-    for(var key in keys) {
-        if(key === "$" || key === "$order") continue;
+    var endElement = "</" + namespace + parentName + ">";
+    
+    if(typeof obj === undefined || obj === null) {
+        // TODO: Handle null types
         
-        var current = parentObj[key];
-        if(typeof current === undefined || current === null) {
-            // TODO: Handle null types
-            
-        } else if(Array.isArray(current)) {
-            result += "<" + key + getAttibutesXML() + ">";   
-            result += "<" + key + getAttibutesXML() + ">";   
-             
+    } else if(Array.isArray(obj)) {
+        obj.forEach(function(value, index) {
+            result += toXML(value, definition[parentName], parentName, level);
+        });
         
-        } else if(typeof current === "object") {
-            result += "<" + key + getAttibutesXML() + ">";    
-        
-        } else {
-            
+    } else if(typeof obj === "object") {
+        var keys = Object.getOwnPropertyNames(obj);
+        var order = definition[parentName + "$order"];
+        if(order) {
+            keys = keys.sort(function(a, b) {
+                order.indexOf(a) - order.indexOf(b)
+            });
         }
+     
+        result += " ".repeat(level * indentation) + startElement + "\n";
+        keys.forEach(function(key, index) {
+            if(key.indexOf("$") > -1) return; // Skip all definition information
+            result += toXML(obj[key], definition[parentName], key, level + 1);    
+        });
+        result += " ".repeat(level * indentation) + endElement + (level > 0 ? "\n" : "");
+        
+    } else {
+        result += " ".repeat(level * indentation) + startElement + obj + endElement + "\n";
     }
+    
+    return result;
 }
 
-function getAttibutesXML() {
-    return "";
+function fromXML(xml, definition) {
+    var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
+    var result = {};
+    var currentName = "";
+    var currentObject = {};
+    var ancestors = [];
+    
+    parser.on('startElement', function(name, attributes) {
+        currentName = name;
+        //currentObject[name] = 
+        
+        
+        ancestors.push(currentObject);
+    });
+
+    parser.on('text', function(data) {
+        
+    });
+    
+    parser.on('endElement', function(name){
+        currentObject = ancestors.pop();
+    });
 }

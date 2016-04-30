@@ -1,0 +1,24 @@
+{
+  "name": "wsdl2ts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "wsdl2ts.js",
+  "dependencies": {
+    "es6-shim": "^0.35.0",
+    "node-expat": "^2.3.13"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tlbdk/wsdl2ts.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tlbdk/wsdl2ts/issues"
+  },
+  "homepage": "https://github.com/tlbdk/wsdl2ts#readme"
+}
