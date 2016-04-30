@@ -7,7 +7,9 @@ var expat = require('node-expat');
 
 var sample = {
     "Header": {
+        "$myObjectAttib": "aValue1",
         "arrays": {
+            "array$attributes": { "myArrayAttrib": "aValue2" },
             "array":[
                 {
                     "key": "value1" 
