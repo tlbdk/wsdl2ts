@@ -4,6 +4,7 @@ var expat = require('node-expat');
 
 // https://github.com/buglabs/node-xml2json
 // https://github.com/vpulim/node-soap
+// TODO: Sanitize XML output
 
 var sample = {
     "Header": {
