@@ -6,12 +6,25 @@ var expat = require('node-expat');
 // https://github.com/vpulim/node-soap
 
 var sample = {
-    "Header": {    
+    "Header": {
+        "arrays": {
+            "array":[
+                {
+                    "key": "value1" 
+                },
+                {
+                    "key": "value2" 
+                },
+                 {
+                    "key": "value3" 
+                }  
+            ]
+        } 
     },
     "Body": {
         "value": "stuff",
         "values": {
-            "value": ["a", "b"]
+            "value": ["a", "b", "c"]
         },
         "Fault": { 
         },    
@@ -45,9 +58,10 @@ var definition = {
 
 
 var xml = toXML(sample, definition, "Envelope");
-var obj = fromXML(sample, definition);
-
 console.log("'"+ xml + "'");
+var obj = fromXML(xml, definition);
+
+
 
 function toXML(obj, definition, parentName, level, indentation) {
     definition = definition ? definition : {};
@@ -100,23 +114,70 @@ function toXML(obj, definition, parentName, level, indentation) {
 function fromXML(xml, definition) {
     var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
     var result = {};
-    var currentName = "";
-    var currentObject = {};
-    var ancestors = [];
+    var currentValue = "";
+    var currentObject = result;
+    
+    var objects = [];
+    var names = [];
     
     parser.on('startElement', function(name, attributes) {
-        currentName = name;
-        //currentObject[name] = 
+        if(names.length > 0) {
+            objects.push(currentObject);
+            var nextObject = {};
+            currentValue = ""; // TODO: Create $t value on object if this has data
+             
+            if(currentObject.hasOwnProperty(name)) {
+                if(Array.isArray(currentObject[name])) {
+                    currentObject[name].push(nextObject);
+                    
+                } else {
+                   // Convert to array
+                    currentObject[name] = [currentObject[name], nextObject];
+                }
+                 
+            } else {
+                currentObject[name] = nextObject;    
+            }
+            
+            currentObject = nextObject;
+        }
         
-        
-        ancestors.push(currentObject);
+        names.push(name);
     });
 
     parser.on('text', function(data) {
-        
+        currentValue += data.trim();
     });
     
     parser.on('endElement', function(name){
-        currentObject = ancestors.pop();
+        if(objects.length > 0) {
+            currentObject = objects.pop();
+                 
+            if(Array.isArray(currentObject[name])) {
+                if(Object.getOwnPropertyNames(currentObject[name][currentObject[name].length -1]).length === 0) {
+                    currentObject[name][currentObject[name].length -1] = currentValue;
+                
+                } else {
+                    // TODO: Save "<tag>text<subtag>" type text
+                }
+                
+            } else if(typeof currentObject[name] === "object") {
+                if(Object.getOwnPropertyNames(currentObject[name]).length === 0) {
+                    currentObject[name] = currentValue;
+                
+                } else {
+                    // TODO: Save "<tag>text<subtag>" type text
+                }
+            }
+            
+            names.pop(); // TODO: Validate that poped value matches name
+        }
+        currentValue = "";
     });
+    
+    if (!parser.parse(xml)) {
+        throw new Error('There are errors in your xml file: ' + parser.getError());
+    }
+    
+    console.log(JSON.stringify(result, null, 2));
 }
