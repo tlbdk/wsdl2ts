@@ -2,6 +2,13 @@
 require('es6-shim');
 var expat = require('node-expat');
 
+// Sample wsdl
+// http://demo-queensland-sl.bentley.com/sldtransservice.svc?singleWsdl
+// http://xmltest.vanillatours.com/Wcf.svc?wsdl
+
+
+
+
 // https://github.com/buglabs/node-xml2json
 // https://github.com/vpulim/node-soap
 // TODO: Sanitize XML output
