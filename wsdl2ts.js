@@ -1,6 +1,10 @@
 'use strict';
-require('es6-shim');
-var expat = require('node-expat');
+var XMLUtils = require('./src/xmlutils.js');
+var http = require('http');
+var pd = require('pretty-data2').pd;
+var fs = require('fs');
+
+
 
 // Sample wsdl
 // http://demo-queensland-sl.bentley.com/sldtransservice.svc?singleWsdl
@@ -14,33 +18,40 @@ var expat = require('node-expat');
 // TODO: Sanitize XML output
 
 var sample = {
-    "Header": {
-        "$myObjectAttib": "aValue1",
-        "arrays": {
-            "array$attributes": { "myArrayAttrib": "aValue2" },
-            "array":[
-                {
-                    "key": "value1" 
-                },
-                {
-                    "key": "value2" 
-                },
-                 {
-                    "key": "value3" 
-                }  
-            ]
-        } 
-    },
-    "Body": {
-        "value": "stuff",
-        "values": {
-            "value": ["a", "b", "c"]
+    "Envelope": {
+        "Header": {
+            "$myObjectAttib": "aValue1",
+            "arrays": {
+                "array$attributes": [
+                    { "myArrayAttrib": "aValue2" },
+                    { "myArrayAttrib": "aValue3" },
+                    { "myArrayAttrib": "aValue4" }
+                ], // TODO: support this
+                "array":[
+                    {
+                        "key": "value1"
+                    },
+                    {
+                        "key": "value2"
+                    },
+                    {
+                        "key": "value3"
+                    }
+                ]
+            }
         },
-        "Fault": { 
-        },    
-    },
-    "soap:SameName": "name1",
-    "soap2:SameName": "name2"
+        "Body": {
+            "value": "stuff",
+            "values": {
+                "value": ["a", "b", "c"]
+            },
+            "Fault": {
+            },
+        },
+        "soap:SameName": "name1", // TODO: Support this
+        "soap2:SameName": "name2",
+        "isArray" : ["Stuff"],
+    }
 };
 
 var definition = {
@@ -52,8 +63,13 @@ var definition = {
     },
     "Envelope$order": ["Header", "Body"],
     "Envelope": {
-        "Header$namespace": "soap",  
-        "Header": {},
+        "Header$namespace": "soap",
+        "Header": {
+            "arrays$type": [],
+            "arrays": {
+                "array": ""   
+            }
+        },
         "Body$namespace": "soap",
         "Body": {
             "value": "string",
@@ -62,145 +78,211 @@ var definition = {
             },
             "values": {
                 "value$namespace": "stuff",
-                "value": [""]
+                "value$type": [],
+                "value": ""
             },
-            "Fault": { 
-            }    
+            "Fault": {
+            }
+        },
+        "isArray$type": [],
+    }
+};
+
+//console.log(JSON.stringify(result, null, 2));
+var xml = XMLUtils.toXML(sample, definition, "Envelope");
+//console.log("'"+ xml + "'");
+var obj = XMLUtils.fromXML(xml, definition);
+//console.log(JSON.stringify(obj, null, 2));
+
+
+var wsdlDefinition = {
+   "definitions": {
+       "types": {
+           "schema$type": [],
+           "schema": {
+               "element$type": []
+           }
+       },
+       "message$type": [],
+       "message": {
+           "part$type": []
+       },
+       "portType$type": [],
+       "portType": {
+           "operation$type": [],
+           "fault$type": [],
+       },
+       "binding$type": [],
+       "binding": {
+           "operation$type": [],      
+       },
+       "service$type": [],
+       "service": {
+           "port$type": [],
+       }
+   }
+};
+
+var wsdlXml = fs.readFileSync(__dirname + "/examples/StockQuote.wsdl");
+
+
+var xsd_simple = { 
+    "$name:": "simple1", 
+    "type": "xs:string" 
+};
+
+//TODO: http://www.w3schools.com/xml/schema_facets.asp , support validations
+var xsd_simpleType_restriction = {
+    "$name:": "simple1",
+    "simpleType": {
+        "restriction": {
+            "$base": "xs:string",
+            "pattern": {
+                "value": "[a-zA-Z0-9]{8}"
+            }
+        }
+    },
+};
+
+var xsd_simpleType_list = {
+    "$name:": "simple1",
+    "simpleType": {
+        "list": {
+            "$itemType": "xs:string"
+        }
+    },
+};
+
+var xsd_complexTypeAll = {
+    "$name": "TradePriceRequest",
+    "complexType": {
+        "all": {
+            "element": {
+                "$name": "tickerSymbol",
+                "$type": "string"
+            }
         }
     }
 };
 
-
-var xml = toXML(sample, definition, "Envelope");
-console.log("'"+ xml + "'");
-var obj = fromXML(xml, definition);
-
-function toXML(obj, definition, parentName, level, indentation) {
-    definition = definition ? definition : {};
-    level = level ? level : 0;
-    indentation = indentation ? indentation : 2;
-    
-    var result = "";
-    var namespace = definition[parentName + "$namespace"] ? definition[parentName + "$namespace"] + ":" : "";
-    var attributes = definition[parentName + "$attributes"] || {};
-    
-    var startElement = "<" + namespace +  parentName;
-    Object.getOwnPropertyNames(attributes).forEach(function(key, index){
-        startElement += " " + key + '="' + attributes[key] + '"';
-    });
-    startElement += ">";
-    
-    var endElement = "</" + namespace + parentName + ">";
-    
-    if(typeof obj === undefined || obj === null) {
-        // TODO: Handle null types
-        
-    } else if(Array.isArray(obj)) {
-        obj.forEach(function(value, index) {
-            result += toXML(value, definition, parentName, level);
-        });
-        
-    } else if(typeof obj === "object") {
-        var keys = Object.getOwnPropertyNames(obj);
-        var order = definition[parentName + "$order"];
-        if(order) {
-            keys = keys.sort(function(a, b) {
-                order.indexOf(a) - order.indexOf(b)
-            });
+var xsd_complexTypeSequence = {
+    "$name": "TradePriceRequest",
+    "complexType": {
+        "all": {
+            "element": {
+                "$name": "tickerSymbol",
+                "$type": "string"
+            }
         }
-     
-        result += " ".repeat(level * indentation) + startElement + "\n";
-        keys.forEach(function(key, index) {
-            if(key.indexOf("$") > -1) return; // Skip all definition information
-            result += toXML(obj[key], definition[parentName], key, level + 1);    
-        });
-        result += " ".repeat(level * indentation) + endElement + (level > 0 ? "\n" : "");
-        
-    } else {
-        result += " ".repeat(level * indentation) + startElement + obj + endElement + "\n";
     }
+};
+
+var xsd_simple_definition = xsdToDefinition(xsd_simple, "stuff");
+
+// http://www.w3schools.com/xml/schema_elements_ref.asp
+function xsdToDefinition(element, targetNamespace) {
+    var result = {};
+    
+    if(element.$type) {
+        result[element.$name] = "";
+        
+    } else if (element.simpleType) {
+        if(element.simpleType.restriction) {
+            result[element.$name] = "";
+            
+        } else if(element.simpleType.list) {
+            result[element.$name] = [];
+        }
+            
+    } else if (element.complexType) {
+        if(element.complexType.sequence) {
+            result[element.$name + "$order"] = [];
+        }
+    }
+    
+    
+   
+    result[element.$name] = xsdToDefinition;
     
     return result;
 }
 
-function fromXML(xml, definition) {
-    var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
-    var result = {};
-    var currentValue = "";
-    var currentObject = result;
-    
-    var objects = [];
-    var names = [];
-    
-    parser.on('startElement', function(name, attributes) {
-        var ns = name.split(":");
-        if(ns.length > 1) {
-            name = ns[1];
-            ns = ns[0];
-        }
-        
-        if(names.length > 0) {
-            objects.push(currentObject);
-            var nextObject = {};
-            currentValue = ""; // TODO: Create $t value on object if this has data
-             
-            if(currentObject.hasOwnProperty(name)) {
-                if(Array.isArray(currentObject[name])) {
-                    currentObject[name].push(nextObject);
-                    
-                } else {
-                   // Convert to array
-                    currentObject[name] = [currentObject[name], nextObject];
-                }
-                 
-            } else {
-                currentObject[name] = nextObject;    
-            }
-            
-            currentObject = nextObject;
-        }
-        
-        names.push(name);
-    });
 
-    parser.on('text', function(data) {
-        currentValue += data.trim();
+function getServices(wsdlXml) {
+    var wsdlobj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
+    var definitions = wsdlobj.definitions;
+    var result = {};
+    // TODO: Support namespaces
+    
+    definitions.service.forEach(function(service){
+        result[service.$name] = {};
+        service.port.forEach(function(port){
+            result[service.$name][port.$name] = {};
+            var binding = definitions.binding.filter(function(binding) { return binding.$name === port.$binding.replace(/^[^:]+:/, ""); })[0];
+            var portType = definitions.portType.filter(function(portType) { return portType.$name === binding.$type.replace(/^[^:]+:/, "") })[0];
+            portType.operation.forEach(function(operation) {
+                var inputMessage = definitions.message.filter(function(message) { return message.$name === operation.input.$message.replace(/^[^:]+:/, "") })[0];
+                var inputElement = {};
+                definitions.types.schema.forEach(function(schema) {
+                    schema.element.forEach(function(element) {
+                        // TODO: Support more than one part
+                        if(element.$name === inputMessage.part[0].$element.replace(/^[^:]+:/, "")) {
+                            inputElement = xsdToDefinition(element, schema.$targetNamespace);
+                        }
+                    });
+                });
+                
+                var outputMessage = definitions.message.filter(function(message) { return message.$name === operation.output.$message.replace(/^[^:]+:/, "") })[0];
+                var outputElement = {};
+                definitions.types.schema.forEach(function(schema) {
+                    schema.element.forEach(function(element) {
+                        // TODO: Support more than one part
+                        if(element.$name === outputMessage.part[0].$element.replace(/^[^:]+:/, "")) {
+                            outputElement = xsdToDefinition(element, schema.$targetNamespace);
+                        }
+                    });
+                });
+                                
+                result[service.$name][port.$name][operation.$name] = {
+                    input: inputElement,
+                    output: outputElement
+                };
+            });
+        });
     });
     
-    parser.on('endElement', function(name){
-        var ns = name.split(":");
-        if(ns.length > 1) {
-            name = ns[1];
-            ns = ns[0];
-        }
-        
-        if(objects.length > 0) {
-            names.pop(); // TODO: Validate that poped value matches name
-            currentObject = objects.pop();
-                 
-            if(Array.isArray(currentObject[name])) {
-                if(Object.getOwnPropertyNames(currentObject[name][currentObject[name].length -1]).length === 0) {
-                    currentObject[name][currentObject[name].length -1] = currentValue;
-                
-                } else {
-                    // TODO: Save "<tag>text<subtag>" type text
-                }
-                
-            } else if(typeof currentObject[name] === "object") {
-                if(Object.getOwnPropertyNames(currentObject[name]).length === 0) {
-                    currentObject[name] = currentValue;
-                
-                } else {
-                    // TODO: Save "<tag>text<subtag>" type text
-                }
-            }
-        }
-        currentValue = "";
-    });
-    
-    if (!parser.parse(xml)) {
-        throw new Error('There are errors in your xml file: ' + parser.getError());
-    }
-    
-    console.log(JSON.stringify(result, null, 2));
+    return result;
 }
+
+
+
+
+
+
+
+
+
+var services = getServices(wsdlXml);
+
+
+
+
+
+console.log(JSON.stringify(services, null, 2));
+
+
+/* http.get("http://demo-queensland-sl.bentley.com/sldtransservice.svc?singleWsdl", function(res) {
+    var data = "";
+    res.on('data', function(chunk) {
+       data += chunk;
+     });
+    res.on('end', function() {
+        var wsdlxml = pd.xml(data);
+        var wsdlobj = XMLUtils.fromXML(data);
+        
+        var service = wsdlobj["definitions"]["service"]["port$attributes"];
+        
+        console.log(wsdlxml);
+        //console.log(JSON.stringify(wsdlObj, null, 2));
+    });
+}); */

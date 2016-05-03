@@ -5,7 +5,8 @@
   "main": "wsdl2ts.js",
   "dependencies": {
     "es6-shim": "^0.35.0",
-    "node-expat": "^2.3.13"
+    "node-expat": "^2.3.13",
+    "pretty-data2": "^0.40.1"
   },
   "devDependencies": {},
   "scripts": {
