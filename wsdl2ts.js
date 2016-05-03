@@ -90,10 +90,11 @@ var definition = {
 
 //console.log(JSON.stringify(result, null, 2));
 var xml = XMLUtils.toXML(sample, definition, "Envelope");
-//console.log("'"+ xml + "'");
+console.log("'"+ xml + "'");
 var obj = XMLUtils.fromXML(xml, definition);
-//console.log(JSON.stringify(obj, null, 2));
+console.log(JSON.stringify(obj, null, 2));
 
+process.exit();
 
 var wsdlDefinition = {
    "definitions": {

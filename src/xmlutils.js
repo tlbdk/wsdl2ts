@@ -1,6 +1,6 @@
 var expat = require('node-expat');
 
-function toXML (obj, definition, parentName, level, indentation) {
+function toXML (obj, definition, parentName, indentation, level) {
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
@@ -27,7 +27,7 @@ function toXML (obj, definition, parentName, level, indentation) {
         
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value, index) {
-            result += toXML(value, definition, parentName, level);
+            result += toXML(value, definition, parentName, indentation, level);
         });
         
     } else if(typeof obj === "object") {
@@ -42,7 +42,7 @@ function toXML (obj, definition, parentName, level, indentation) {
         result += " ".repeat(level * indentation) + startElement + "\n";
         keys.forEach(function(key, index) {
             if(key.indexOf("$") > -1) return; // Skip all definition information
-            result += toXML(obj[key], definition[parentName], key, level + 1);    
+            result += toXML(obj[key], definition[parentName], key, indentation, level + 1);    
         }); 
         result += " ".repeat(level * indentation) + endElement + (level > 0 ? "\n" : "");    
         
@@ -74,16 +74,15 @@ var test = {
 
 var order = [["first"], ["firstNested", "secondNested"]]
 
-
-function fromXML (xml, objectDefinition, inlineAttibutes, level) {
+function fromXML (xml, objectDefinition, inlineAttibutes) {
+    var definitions = [objectDefinition || {}];
+    
     var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
     var result = {};
     var currentValue = "";
     var currentObject = result;
-    
     var objects = [];
     var names = [];
-    var definitions = [objectDefinition || {}];
     
     //TODO: Save element order
     var order = [];
@@ -144,6 +143,11 @@ function fromXML (xml, objectDefinition, inlineAttibutes, level) {
                 currentObject[name] = nextObject;
             }
         }
+        
+        /* if(order.length === names.length -1)
+            order.push([name]); */
+        
+        
         
         names.push(name);
         objects.push(currentObject);
