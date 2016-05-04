@@ -4,6 +4,11 @@ var http = require('http');
 var pd = require('pretty-data2').pd;
 var fs = require('fs');
 
+// TODO: Look into using other XML parsers
+// https://github.com/node-xmpp/ltx
+// https://github.com/polotek/libxmljs - https://gist.github.com/polotek/484083
+
+// TODO: Implement support for XSD validation of XML messages after generation: https://www.npmjs.com/package/libxml-xsd
 
 
 // Sample wsdl
