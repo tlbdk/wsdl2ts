@@ -42,6 +42,8 @@
 			"stopOnEntry": false,
 			// run the tests in the test folder
 			"args": [
+				"--no-timeouts",
+				"--grep", "xsd_simple",
 				"test"
 			],
 			"cwd": "${workspaceRoot}",

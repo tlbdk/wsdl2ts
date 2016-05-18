@@ -15,7 +15,7 @@ function toXML (obj, definition, parentName, indentation, level) {
     var attributes = definition[parentName + "$attributes"] || {};
     
     var startElement = "<" + namespace +  parentName;
-    Object.getOwnPropertyNames(attributes).forEach(function(key, index){
+    Object.getOwnPropertyNames(attributes).forEach(function(key){
         startElement += " " + key + '="' + attributes[key] + '"';
     });
     startElement += ">";
@@ -26,21 +26,21 @@ function toXML (obj, definition, parentName, indentation, level) {
         // TODO: Handle null types
         
     } else if(Array.isArray(obj)) {
-        obj.forEach(function(value, index) {
+        obj.forEach(function(value) {
             result += toXML(value, definition, parentName, indentation, level);
         });
         
     } else if(typeof obj === "object") {
         var keys = Object.getOwnPropertyNames(obj);
-        var order = definition[parentName + "$order"];
-        if(order) {
+        var orders = definition[parentName + "$orders"];
+        if(orders) {
             keys = keys.sort(function(a, b) {
-                order.indexOf(a) - order.indexOf(b)
+                orders.indexOf(a) - orders.indexOf(b);
             });
         }
         
         result += " ".repeat(level * indentation) + startElement + "\n";
-        keys.forEach(function(key, index) {
+        keys.forEach(function(key) {
             if(key.indexOf("$") > -1) return; // Skip all definition information
             result += toXML(obj[key], definition[parentName], key, indentation, level + 1);    
         }); 
@@ -53,27 +53,6 @@ function toXML (obj, definition, parentName, indentation, level) {
     return result;
 }
 
-var test = {
-    "first": {
-        "firstNested": {
-            
-        },
-        "secondNested": {
-            
-        }
-    },
-    "second": {
-        "firstNested": {
-            
-        },
-        "secondNested": {
-            
-        }
-    }
-}
-
-var order = [["first"], ["firstNested", "secondNested"]]
-
 function fromXML (xml, objectDefinition, inlineAttibutes) {
     var definitions = [objectDefinition || {}];
     
@@ -84,47 +63,51 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
     var objects = [];
     var names = [];
     
-    //TODO: Save element order
-    var order = [];
+    //TODO: Save element orders
+    var orders = [];
     
     parser.on('startElement', function(name, attributes) {
+        // Parse namespace
         var ns = name.split(":");
         if(ns.length > 1) {
             name = ns[1];
             ns = ns[0];
         }
+        
         var definition = definitions[definitions.length - 1];
         var type = definition[name + "$type"];
+        var nextObject = {};
         currentValue = ""; // TODO: Create $t value on object if this has data
         
         // Handle attributes
-        if(!inlineAttibutes && Object.getOwnPropertyNames(attributes).length) {
-            if(currentObject.hasOwnProperty(name + "$attributes")) {
-                if(Array.isArray(currentObject[name + "$attributes"])) {
-                    currentObject[name + "$attributes"].push(attributes);
+        if(Object.getOwnPropertyNames(attributes).length > 0) {
+            if(inlineAttibutes) {
+                Object.keys(attributes).forEach(function(key){
+                    nextObject["$" + key] = attributes[key];
+                });
+
+            } else {     
+                if(currentObject.hasOwnProperty(name + "$attributes")) {
+                    if(Array.isArray(currentObject[name + "$attributes"])) {
+                        currentObject[name + "$attributes"].push(attributes);
+                        
+                    } else {
+                        // Convert to array
+                        currentObject[name + "$attributes"] = [currentObject[name + "$attributes"], attributes];
+                    }
                     
                 } else {
-                    // Convert to array
-                    currentObject[name + "$attributes"] = [currentObject[name + "$attributes"], attributes];
+                    if(Array.isArray(type)) {
+                        currentObject[name + "$attributes"] = [attributes];
+                            
+                    } else {
+                        currentObject[name + "$attributes"] = attributes;    
+                    }
                 }
-                
-            } else {
-                if(Array.isArray(type)) {
-                    currentObject[name + "$attributes"] = [attributes];
-                        
-                } else {
-                    currentObject[name + "$attributes"] = attributes;    
-                }
-            }
+            }    
         }
         
         // Handle tag
-        var nextObject = {};
-        if(inlineAttibutes) {
-            Object.keys(attributes).forEach(function(key){
-                nextObject["$" + key] = attributes[key];
-            });
-        }
         if(currentObject.hasOwnProperty(name)) {
             if(Array.isArray(currentObject[name])) {
                 currentObject[name].push(nextObject);
@@ -144,11 +127,14 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
             }
         }
         
-        /* if(order.length === names.length -1)
-            order.push([name]); */
-        
-        
-        
+        // Save order     
+        if(orders.length <= names.length) {
+           orders.push([name]);
+            
+        } else if(!Array.isArray(currentObject[name])) {
+           orders[names.length].push(name);
+        }
+ 
         names.push(name);
         objects.push(currentObject);
         definitions.push(definition[name] || {});
@@ -167,10 +153,17 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
         }
         
         if(objects.length > 0) {
-            names.pop(); // TODO: Validate that poped value matches name
-            definitions.pop();
             currentObject = objects.pop();
-                 
+            definitions.pop();
+            
+            if(names.length < orders.length) {
+                var order = orders.pop();
+                if(order.length > 1) {
+                    currentObject[name + "$order"] = order;    
+                }
+            }
+            names.pop();
+            
             if(Array.isArray(currentObject[name])) {
                 if(Object.getOwnPropertyNames(currentObject[name][currentObject[name].length -1]).length === 0) {
                     currentObject[name][currentObject[name].length -1] = currentValue;
@@ -187,7 +180,11 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
                     // TODO: Save "<tag>text<subtag>" type text
                 }
             }
+        } else {
+            console.log("No objects in objects");
         }
+        
+        
         currentValue = "";
     });
     
