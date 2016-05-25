@@ -6,8 +6,10 @@ var wsdlDefinition = {
        "types": {
            "schema$type": [],
            "schema": {
-               "element$type": []
-           }
+               "element$type": [],
+               "simpleType$type": [],
+               "complexType$type": [],   
+            }
        },
        "message$type": [],
        "message": {
@@ -30,7 +32,36 @@ var wsdlDefinition = {
 };
 
 // http://www.w3schools.com/xml/schema_elements_ref.asp
-function schemasToDefinition(element, schemas, targetNamespace) {
+
+function schemasToDefinition(element, targetNamespace, schemas, namespaces) {
+    var elementLookup = {};
+    schemas.forEach(function (schema) {
+        ['simpleType', 'complexType', 'element'].forEach(function (xsdType) {
+           (schema[xsdType] || []).forEach(function (type) {
+               var name = type.$name;
+               // TODO : Support namespaces
+               var ns = name.split(":");
+               if (ns.length > 1) {
+                   name = ns[1];
+                   ns = ns[0];
+               }
+               
+               if(xsdType === 'element') {
+                   elementLookup[name] = type;
+
+               } else {
+                   // Convert all types to elements
+                   elementLookup[name] = { $name: name };
+                   elementLookup[name][xsdType] = type;
+               }
+           });
+        });
+    });
+    
+    return _schemasToDefinition(element, targetNamespace, elementLookup, namespaces);
+}
+
+function _schemasToDefinition(element, targetNamespace, typeLookup, namespaces) {
     var result = {};
     if (element.$type || element.simpleType) {
         var type;
@@ -47,15 +78,48 @@ function schemasToDefinition(element, schemas, targetNamespace) {
             throw new Error("Unknown simpleType type");
         }
         
+        // TODO: Support namespaces
+        var ns = type.split(":");
+        if (ns.length > 1) {
+            type = ns[1];
+            ns = ns[0];
+        } else {
+            ns = "";
+        }
+        
         // TODO: look up type to see if we need to dive into another object
         switch(type) {
-            case "xs:string": {
+            case "string": {
+                result[element.$name] = ""; 
+                break;
+            }
+            case "short": {
+                result[element.$name] = ""; 
+                break;
+            }
+            case "int": {
+                result[element.$name] = ""; 
+                break;
+            }
+            case "decimal": {
+                result[element.$name] = ""; 
+                break;
+            }
+            case "base64Binary": {
                 result[element.$name] = ""; 
                 break;
             }
             default: {
-                // TODO: Try to look up type in schemas and recurse on the type
-                throw new Error("Unknown type");
+                var subElement = typeLookup[type];
+                if(subElement){
+                    var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
+                    result[element.$name] = {};
+                    result[element.$name] = subResult[subElement.$name];
+                    
+                } else {
+                    console.log(JSON.stringify(element, null, 2));
+                    throw new Error("Unknown type");
+                }
             }
         }
         
@@ -76,7 +140,7 @@ function schemasToDefinition(element, schemas, targetNamespace) {
         
         elements = Array.isArray(elements) ? elements : [elements];
         elements.forEach(function(subElement) {
-            var subResult = schemasToDefinition(subElement, schemas, targetNamespace);
+            var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
             result[element.$name][subElement.$name] = subResult[subElement.$name];
             if(result.hasOwnProperty(element.$name + "$order")) {
                 result[element.$name + "$order"].push(subElement.$name);    

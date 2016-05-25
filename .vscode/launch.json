@@ -43,7 +43,7 @@
 			// run the tests in the test folder
 			"args": [
 				"--no-timeouts",
-				"--grep", "xsd_simple",
+				"--grep", "xml_xsd_test",
 				"test"
 			],
 			"cwd": "${workspaceRoot}",
