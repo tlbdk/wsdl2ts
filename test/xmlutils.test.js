@@ -83,6 +83,8 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
   var sample_definition = {
     "Envelope$namespace": "soap",
     "Envelope$attributes": {
+      "xmlns:myns1": "http://myns1",
+      "xmlns:myns2": "http://myns1",
       "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
       "xmlns:soap2": "http://www.w3.org/2003/05/soap-envelope/",
       "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding",
@@ -114,6 +116,8 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
         }
       },
       "isArray$type": [],
+      "myns1:overlaps$type": [], // TODO: implement
+      "myns2:overlaps$type": [] 
     }
   };
 
