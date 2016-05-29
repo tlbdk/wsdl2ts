@@ -6,125 +6,155 @@
 var chai = require('chai');
 var assert = chai.assert;
 var schemasToDefinition = require('../src/wsdlutils.js').schemasToDefinition;
+var schemasToDefinition2 = require('../src/wsdlutils.js').schemasToDefinition2;
 var XMLUtils = require('../src/xmlutils');
 var fs = require('fs');
 
 //TODO: http://www.w3schools.com/xml/schema_facets.asp , support validations
 
-describe('xsdToDefinition simple', function () {
-    it('xsd_simple', function () {
+describe('schemasToDefinition2', function () {
+    it('Most used XSD types', function () {
         var xsd_simple = {
-            "$name": "simple1",
-            "$type": "xs:string"
-        };
-        
-        var expected_definition = {
-            simple1: ""
-        };
-        
-        var definition = schemasToDefinition(xsd_simple);
-        assert.deepEqual(definition, expected_definition);
-    });
-    
-    it('xsd_simpleType_restriction', function () {
-        var xsd_simpleType_restriction = {
-            "$name": "simple1",
-            "simpleType": {
-                "restriction": {
-                    "$base": "xs:string",
-                    "pattern": {
-                        "value": "[a-zA-Z0-9]{8}"
-                    }
-                }
-            },
-        };
-
-        var expected_definition = {
-            simple1: ""
-        };
-
-        var definition = schemasToDefinition(xsd_simpleType_restriction);
-        assert.deepEqual(definition, expected_definition);
-    });
-
-    it('xsd_simpleType_list', function () {
-        var xsd_simpleType_list = {
-            "$name": "simple1",
-            "simpleType": {
-                "list": {
-                    "$itemType": "xs:string"
-                }
-            },
-        };
-
-        var expected_definition = {
-            simple1: ""
-        };
-
-        var definition = schemasToDefinition(xsd_simpleType_list);
-        assert.deepEqual(definition, expected_definition);
-    });
-
-    it('xsd_complexTypeAll', function () {
-        var xsd_complexTypeAll = {
-            "$name": "TradePriceRequest",
-            "complexType": {
-                "all": {
+            "schema": [
+                {
+                    "xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+                    "$elementFormDefault": "qualified",
+                    "$targetNamespace": "http://tempuri.org",
                     "element": [
                         {
-                            "$name": "tickerSymbola",
+                            "$name": "plain",
                             "$type": "xs:string"
                         },
                         {
-                            "$name": "tickerSymbolb",
-                            "$type": "xs:string"
-                        }
-                    ]
-                }
-            }
-        };
-
-        var expected_definition = {
-            TradePriceRequest: {
-                tickerSymbola: "",
-                tickerSymbolb: ""
-            }
-        };
-
-        var definition = schemasToDefinition(xsd_complexTypeAll);
-        assert.deepEqual(definition, expected_definition);
-    });
-    
-    it('xsd_complexTypeSequence', function () {
-        var xsd_complexTypeSequence = {
-            "$name": "TradePriceRequest",
-            "complexType": {
-                "sequence": {
-                     "element": [
-                        {
-                            "$name": "tickerSymbol1",
-                            "$type": "xs:string"
+                            "$name": "simple",
+                            "simpleType": {
+                                "restriction": {
+                                    "$base": "xs:string",
+                                    "pattern": {
+                                        "value": "[a-zA-Z0-9]{8}"
+                                    }
+                                }
+                            },
                         },
                         {
-                            "$name": "tickerSymbol2",
-                            "$type": "xs:string"
+                            "$name": "complexAll",
+                            "complexType": {
+                                "all": {
+                                    "element": [
+                                        {
+                                            "$name": "tickerSymbola",
+                                            "$type": "xs:string"
+                                        },
+                                        {
+                                            "$name": "tickerSymbolb",
+                                            "$type": "xs:string"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "$name": "complexSequence",
+                            "complexType": {
+                                "sequence": {
+                                    "element": [
+                                        {
+                                            "$name": "tickerSymbol1",
+                                            "$type": "xs:string"
+                                        },
+                                        {
+                                            "$name": "tickerSymbol2",
+                                            "$type": "xs:string"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            "$name": "refrencedComplexSequence",
+                            "$type": "myns:tickerType"
+                        },
+                        {
+                            "$name": "refrencedSimpleRestriction",
+                            "$type": "myns:verySimpleType"
+                        }
+                    ],
+                    "complexType": [
+                        {
+                            "$name": "tickerType",
+                            "sequence": {
+                                "element": [
+                                    {
+                                        "$name": "tickerSymbolx",
+                                        "$type": "xs:string"
+                                    },
+                                    {
+                                        "$name": "tickerSymboly",
+                                        "$type": "xs:string"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "simpleType": [
+                        {
+                            "$name": "verySimpleType",
+                            "restriction": {
+                                "$base": "xs:string",
+                                "maxLength": 3
+                            }
                         }
                     ]
                 }
-            }
+            ]
+        };
+        
+         var namespaces = {
+          "xmlns:myns": "http://tempuri.org",
+          "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
         };
         
         var expected_definition = {
-            TradePriceRequest$order: ["tickerSymbol1", "tickerSymbol2"],
-            TradePriceRequest: {
+            plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            plain$type: "",
+            plain: "",
+            simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            simple$type: "",
+            simple: "",
+            complexAll$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            complexAll: {
+                tickerSymbola: "",
+                tickerSymbola$type: "",
+                tickerSymbolb: "",
+                tickerSymbolb$type: "",
+            },
+            complexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            complexSequence$order: ["tickerSymbol1", "tickerSymbol2"],
+            complexSequence: {
                 tickerSymbol1: "",
-                tickerSymbol2: ""
-            }
+                tickerSymbol1$type: "",
+                tickerSymbol2: "",
+                tickerSymbol2$type: "",
+            },
+            refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
+            refrencedComplexSequence: {
+                tickerSymbolx: "",
+                tickerSymbolx$type: "",
+                tickerSymboly: "",
+                tickerSymboly$type: "",
+            },
+            refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            refrencedSimpleRestriction: "",
+            refrencedSimpleRestriction$type: ""               
         };
-
-        var definition = schemasToDefinition(xsd_complexTypeSequence);
+        
+        var definition = schemasToDefinition2(xsd_simple.schema, namespaces);    
+        //console.log(JSON.stringify(definition, null, 2));
+        
         assert.deepEqual(definition, expected_definition);
     });
+    
 });
 
 describe('xsdToDefinition test', function () {

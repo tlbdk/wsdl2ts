@@ -33,6 +33,201 @@ var wsdlDefinition = {
 
 // http://www.w3schools.com/xml/schema_elements_ref.asp
 
+function schemasToDefinition2(schemas, namespaces) {
+    // Build type lookup cache
+    var typeLookupMap = {};
+    schemas.forEach(function (schema) {
+        ['simpleType', 'complexType', 'element'].forEach(function (xsdType) {
+           (schema[xsdType] || []).forEach(function (type) {
+               var name = type.$name;
+               // TODO : Support namespaces
+               var ns = name.split(":");
+               if (ns.length > 1) {
+                   name = ns[1];
+                   ns = ns[0];
+               }
+               // types and elements don't share symbol spaces
+               typeLookupMap[(xsdType === "element" ? "#" : "") + name] = type;
+               typeLookupMap[(xsdType === "element" ? "#" : "") + name + "$xsdType"] = xsdType;
+           });
+        });
+    });
+    
+    // Get definitions for all the elements
+    var result = {};
+    schemas.forEach(function (schema) {
+        schema.element.forEach(function (element) {
+            // Save namespaces
+            result[element.$name + "$attributes"] = namespaces;            
+            
+            // Generate definition for element
+            var targetNamespace = schema.$targetNamespace; // TODO: Default to value
+            var definition = _elementToDefinition("element", element, targetNamespace, typeLookupMap, namespaces);
+            Object.keys(definition).forEach(function (key) {
+                result[key] = definition[key];    
+            });
+        });
+    });
+    
+    return result;
+}
+
+function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, namespaces){
+    var result = {};
+    var subResult;
+    var type;
+    
+    if (xsdType === "element") {
+        // Extract type
+        if (element.$type) {
+            type = element.$type;
+        
+        } else if (element.simpleType) {
+            if (element.simpleType.restriction) {
+                type = element.simpleType.restriction.$base;
+
+            } else if (element.simpleType.list) {
+                type = element.simpleType.list.$itemType;
+
+            } else {
+                throw new Error("Unknown simpleType structure");
+            }
+            
+        } else if (element.complexType) {
+            type = "object";
+            subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, typeLookupMap, namespaces);
+        
+        } else {
+            throw new Error("Unknown element structure");
+        }
+        
+        if(type !== "object") {
+            // Resolve type namespace
+            var typeNamespace = type.split(":");
+            if (typeNamespace.length > 1) {
+                type = typeNamespace[1];
+                typeNamespace = typeNamespace[0];
+
+                if (namespaces.hasOwnProperty("xmlns:" + typeNamespace)) {
+                    typeNamespace = namespaces["xmlns:" + typeNamespace];
+
+                } else {
+                    throw new Error("Could not find namespace alias '" + typeNamespace + "'");
+                }
+
+            } else {
+                typeNamespace = "";
+            }
+
+            // Look up type if it's not a xsd native type
+            if (typeNamespace === targetNamespace) {
+                var subElement = typeLookupMap[type];
+                var subXsdType = typeLookupMap[type + "$xsdType"];
+                if (subElement) {
+                    if (subXsdType === "complexType" || subXsdType === "element") {
+                        subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, typeLookupMap, namespaces);
+
+                    } else if (subXsdType === "simpleType") {
+                        result[element.$name + "$type"] = "";
+
+                    } else {
+                        throw new Error("Unknown XSD type '" + subXsdType);
+                    }
+
+                } else {
+                    console.log(JSON.stringify(element, null, 2));
+                    throw new Error("Could not find type '" + type + "' in namespace '" + typeNamespace + "'");
+                }
+
+            } else if (typeNamespace === "http://www.w3.org/2001/XMLSchema") {
+                xsdTypeLookup(type);
+                // TODO: Check types
+                result[element.$name + "$type"] = "";
+
+            } else {
+                throw new Error("Could not find type namespace '" + typeNamespace + "'");
+            }    
+        } 
+        
+        if(subResult) {
+            result[element.$name] = {};
+            Object.keys(subResult).forEach(function (key) {
+                if(key.startsWith("$")) {
+                    result[element.$name + key] = subResult[key];
+                } else {
+                    result[element.$name][key] = subResult[key];    
+                }
+            });
+            
+        } else {
+            result[element.$name] = "";
+        }
+        
+        // Check if this type is an array
+        if ((element.$maxOccurs || 0) > 1) {
+            result[element.$name + "$type"] = [];
+        }
+        
+    } else if(xsdType === "complexType") {
+        var elements;
+        if(element.all) {
+            elements = element.all.element;
+            
+        } else if (element.sequence) {
+            elements = element.sequence.element;
+            result["$order"] = [];
+        
+        } else {
+            throw new Error("Unknown complexType structure");
+        }
+        
+        elements = Array.isArray(elements) ? elements : [elements];
+        elements.forEach(function(subElement) {
+            var subResult = _elementToDefinition("element", subElement, targetNamespace, typeLookupMap, namespaces);
+            Object.keys(subResult).forEach(function (key) {
+                result[key] = subResult[key];
+            });
+            if(result.hasOwnProperty("$order")) {
+                result["$order"].push(subElement.$name);
+            }
+        });
+    }
+    
+    return result;
+}
+
+function xsdTypeLookup(type) {
+    // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
+    switch(type) {
+        case "boolean": return "boolean";
+        case "base64Binary": return "ArrayBuffer";
+        case "hexBinary": return "ArrayBuffer";
+        case "anyURI": return "string";
+        case "language": return "string";
+        case "normalizedString": return "string";
+        case "string": return "string";
+        case "token": return "string";
+        case "byte": return "number";
+        case "decimal": return "number";
+        case "double": return "number";
+        case "float": return "number";
+        case "int": return "number";
+        case "integer": return "number";
+        case "long": return "number";
+        case "negativeInteger": return "number";
+        case "nonNegativeInteger": return "number";
+        case "nonPositiveInteger": return "number";
+        case "short": return "number";
+        case "unsignedByte": return "number";
+        case "unsignedInt": return "number";
+        case "unsignedLong": return "number";
+        case "unsignedShort": return "number";
+        default: throw new Error("Unknown XSD type " + type);
+    }
+    
+}
+
+
 function schemasToDefinition(element, targetNamespace, schemas, namespaces) {
     var elementLookup = {};
     schemas.forEach(function (schema) {
@@ -87,6 +282,10 @@ function _schemasToDefinition(element, targetNamespace, typeLookup, namespaces) 
             ns = "";
         }
         
+        if((element.$maxOccurs || 0) > 1) {
+            result[element.$name + "$type"] = [];
+        }
+        
         // TODO: look up type to see if we need to dive into another object
         switch(type) {
             case "string": {
@@ -113,7 +312,6 @@ function _schemasToDefinition(element, targetNamespace, typeLookup, namespaces) 
                 var subElement = typeLookup[type];
                 if(subElement){
                     var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
-                    result[element.$name] = {};
                     result[element.$name] = subResult[subElement.$name];
                     
                 } else {
@@ -141,7 +339,9 @@ function _schemasToDefinition(element, targetNamespace, typeLookup, namespaces) 
         elements = Array.isArray(elements) ? elements : [elements];
         elements.forEach(function(subElement) {
             var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
-            result[element.$name][subElement.$name] = subResult[subElement.$name];
+            Object.keys(subResult).forEach(function (key) {
+                result[element.$name][key] = subResult[key];
+            });
             if(result.hasOwnProperty(element.$name + "$order")) {
                 result[element.$name + "$order"].push(subElement.$name);    
             }
@@ -191,4 +391,5 @@ function getServices(wsdlXml) {
 
 
 module.exports.schemasToDefinition = schemasToDefinition;
+module.exports.schemasToDefinition2 = schemasToDefinition2;
 module.exports.getServices = getServices;

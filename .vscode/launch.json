@@ -43,7 +43,7 @@
 			// run the tests in the test folder
 			"args": [
 				"--no-timeouts",
-				"--grep", "xml_xsd_test",
+				"--grep", "schemasToDefinition2",
 				"test"
 			],
 			"cwd": "${workspaceRoot}",
