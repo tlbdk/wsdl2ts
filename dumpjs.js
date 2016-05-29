@@ -10,7 +10,5 @@ var schemasToDefinition = require('./src/wsdlutils.js').schemasToDefinition;
 
 var definition = schemasToDefinition(obj.definitions.types.schema.element[2], "stuff", [obj.definitions.types.schema], null);
 
-
-
-var xml = XMLUtils.toXML(request, definition, "KNSIP22_TI");
-console.log(xml);
+//var xml = XMLUtils.toXML(request, definition, "KNSIP22_TI");
+//console.log(xml);

@@ -110,43 +110,55 @@ describe('schemasToDefinition2', function () {
         };
         
          var namespaces = {
-          "xmlns:myns": "http://tempuri.org",
-          "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+          "myns": "http://tempuri.org",
+          "xs": "http://www.w3.org/2001/XMLSchema"
         };
         
         var expected_definition = {
             plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             plain$type: "",
+            plain$namespace: "myns",
             plain: "",
             simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             simple$type: "",
+            simple$namespace: "myns",
             simple: "",
             complexAll$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            complexAll$namespace: "myns",
             complexAll: {
                 tickerSymbola: "",
                 tickerSymbola$type: "",
+                tickerSymbola$namespace: "myns",
                 tickerSymbolb: "",
                 tickerSymbolb$type: "",
+                tickerSymbolb$namespace: "myns",
             },
             complexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             complexSequence$order: ["tickerSymbol1", "tickerSymbol2"],
+            complexSequence$namespace: "myns",
             complexSequence: {
                 tickerSymbol1: "",
                 tickerSymbol1$type: "",
+                tickerSymbol1$namespace: "myns",
                 tickerSymbol2: "",
                 tickerSymbol2$type: "",
+                tickerSymbol2$namespace: "myns",
             },
             refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
+            refrencedComplexSequence$namespace: "myns",
             refrencedComplexSequence: {
                 tickerSymbolx: "",
                 tickerSymbolx$type: "",
+                tickerSymbolx$namespace: "myns",
                 tickerSymboly: "",
                 tickerSymboly$type: "",
+                tickerSymboly$namespace: "myns",
             },
             refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            refrencedSimpleRestriction$type: "",
+            refrencedSimpleRestriction$namespace: "myns",
             refrencedSimpleRestriction: "",
-            refrencedSimpleRestriction$type: ""               
         };
         
         var definition = schemasToDefinition2(xsd_simple.schema, namespaces);    

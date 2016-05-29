@@ -34,21 +34,23 @@ var wsdlDefinition = {
 // http://www.w3schools.com/xml/schema_elements_ref.asp
 
 function schemasToDefinition2(schemas, namespaces) {
+    // Make reverse lookup posible
+    var namespaceToAlias = {};
+    Object.keys(namespaces).forEach(function(key) {
+       namespaceToAlias[namespaces[key]] = key; 
+    });
+    
     // Build type lookup cache
     var typeLookupMap = {};
     schemas.forEach(function (schema) {
+        var targetNamespace = schema.$targetNamespace; // TODO: Default to value
+        var targetNamespaceAlias = namespaceToAlias[targetNamespace] || ""; // TODO: Die if we can't find the namespace
         ['simpleType', 'complexType', 'element'].forEach(function (xsdType) {
            (schema[xsdType] || []).forEach(function (type) {
                var name = type.$name;
-               // TODO : Support namespaces
-               var ns = name.split(":");
-               if (ns.length > 1) {
-                   name = ns[1];
-                   ns = ns[0];
-               }
                // types and elements don't share symbol spaces
-               typeLookupMap[(xsdType === "element" ? "#" : "") + name] = type;
-               typeLookupMap[(xsdType === "element" ? "#" : "") + name + "$xsdType"] = xsdType;
+               typeLookupMap[(xsdType === "element" ? "" : "#") + targetNamespaceAlias + ":" + name] = type;
+               typeLookupMap[(xsdType === "element" ? "" : "#") + targetNamespaceAlias + ":" + name + "$xsdType"] = xsdType;
            });
         });
     });
@@ -56,12 +58,15 @@ function schemasToDefinition2(schemas, namespaces) {
     // Get definitions for all the elements
     var result = {};
     schemas.forEach(function (schema) {
+        var targetNamespace = schema.$targetNamespace; // TODO: Default to value
         schema.element.forEach(function (element) {
             // Save namespaces
-            result[element.$name + "$attributes"] = namespaces;            
-            
-            // Generate definition for element
-            var targetNamespace = schema.$targetNamespace; // TODO: Default to value
+            result[element.$name + "$attributes"] = {};
+            Object.keys(namespaces).forEach(function (key) {
+                result[element.$name + "$attributes"]["xmlns:" + key] = namespaces[key];    
+            });
+
+            // Generate definition for element and copy it to result
             var definition = _elementToDefinition("element", element, targetNamespace, typeLookupMap, namespaces);
             Object.keys(definition).forEach(function (key) {
                 result[key] = definition[key];    
@@ -73,6 +78,12 @@ function schemasToDefinition2(schemas, namespaces) {
 }
 
 function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, namespaces){
+    // Make reverse lookup posible
+    var namespaceToAlias = {};
+    Object.keys(namespaces).forEach(function(key) {
+       namespaceToAlias[namespaces[key]] = key; 
+    });
+    
     var result = {};
     var subResult;
     var type;
@@ -103,26 +114,17 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
         
         if(type !== "object") {
             // Resolve type namespace
-            var typeNamespace = type.split(":");
-            if (typeNamespace.length > 1) {
-                type = typeNamespace[1];
-                typeNamespace = typeNamespace[0];
+            var typeNamespace = _namespaceLookup(type, namespaces);
 
-                if (namespaces.hasOwnProperty("xmlns:" + typeNamespace)) {
-                    typeNamespace = namespaces["xmlns:" + typeNamespace];
-
-                } else {
-                    throw new Error("Could not find namespace alias '" + typeNamespace + "'");
-                }
-
+            if (typeNamespace.ns === "http://www.w3.org/2001/XMLSchema") {
+                // TODO: Save types for typescript intefaces
+                _xsdTypeLookup(typeNamespace.name);
+                result[element.$name + "$type"] = "";
+            
             } else {
-                typeNamespace = "";
-            }
-
-            // Look up type if it's not a xsd native type
-            if (typeNamespace === targetNamespace) {
-                var subElement = typeLookupMap[type];
-                var subXsdType = typeLookupMap[type + "$xsdType"];
+                // Look up type if it's not a xsd native type
+                var subElement = typeLookupMap["#" + type];
+                var subXsdType = typeLookupMap["#" + type + "$xsdType"];
                 if (subElement) {
                     if (subXsdType === "complexType" || subXsdType === "element") {
                         subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, typeLookupMap, namespaces);
@@ -136,16 +138,8 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
 
                 } else {
                     console.log(JSON.stringify(element, null, 2));
-                    throw new Error("Could not find type '" + type + "' in namespace '" + typeNamespace + "'");
+                    throw new Error("Could not find type '" + typeNamespace.name + "' in namespace '" + typeNamespace.ns + "'");
                 }
-
-            } else if (typeNamespace === "http://www.w3.org/2001/XMLSchema") {
-                xsdTypeLookup(type);
-                // TODO: Check types
-                result[element.$name + "$type"] = "";
-
-            } else {
-                throw new Error("Could not find type namespace '" + typeNamespace + "'");
             }    
         } 
         
@@ -162,6 +156,9 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
         } else {
             result[element.$name] = "";
         }
+        
+        // Save namespace
+        result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
         
         // Check if this type is an array
         if ((element.$maxOccurs || 0) > 1) {
@@ -196,7 +193,25 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
     return result;
 }
 
-function xsdTypeLookup(type) {
+function _namespaceLookup(name, namespaces) {
+    var result;
+    var ns = name.split(":");
+    if (ns.length > 1) {
+        if (namespaces.hasOwnProperty(ns[0])) {
+            result = { name: ns[1], ns: namespaces[ns[0]] };
+
+        } else {
+            throw new Error("Could not find namespace alias '" + ns + "'");
+        }
+        
+    } else {
+        result = { name: name, ns: "" };
+    }
+    
+    return result;
+} 
+
+function _xsdTypeLookup(type) {
     // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
     switch(type) {
         case "boolean": return "boolean";
