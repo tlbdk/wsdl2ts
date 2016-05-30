@@ -31,6 +31,48 @@ var wsdlDefinition = {
    }
 };
 
+function wsdlToToDefinition(wsdlXml) {
+    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
+
+    var namespaces = {};
+    Object.keys(wsdlObj.definitions).forEach(function (key) {
+        var ns = key.match(/^\$xmlns:(.+)$/);
+        if (ns) {
+            namespaces[ns[1]] = wsdlObj.definitions[key];
+        }
+    });
+    
+    var definition = schemasToDefinition2(wsdlObj.definitions.types.schema, namespaces);
+    return definition;
+}
+
+function getSchemaXML(wsdlXml) {
+    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition);
+    
+    var namespaces = {};
+    // TODO: Fix 
+    Object.keys(wsdlObj.definitions).forEach(function (key) {
+        var ns = key.match(/^\$xmlns:(.+)$/);
+        if (ns) {
+            namespaces[ns[1]] = wsdlObj.definitions[key];
+        }
+    });
+    
+    Object.keys(wsdlObj.definitions.types.schema$attributes[0]).forEach(function (key) {
+        namespaces[key] = wsdlObj.definitions.types.schema$attributes[0][key];
+    });
+    
+    var schemaObj = {
+        schema$attributes: namespaces,
+        schema: wsdlObj.definitions.types.schema[0]   
+    };
+    
+    var obj = XMLUtils.toXML(schemaObj, {}, "schema");
+    
+    return obj;
+}
+
+
 // http://www.w3schools.com/xml/schema_elements_ref.asp
 
 function schemasToDefinition2(schemas, namespaces) {
@@ -108,6 +150,12 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
             type = "object";
             subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, typeLookupMap, namespaces);
         
+        } else if (element.hasOwnProperty("complexType")) {
+            type = "object"; // Handle <xs:element name="myEmptyElement"><xs:complexType/>...
+            
+        } else if (Object.keys(element).length === 0) {
+            type = "object"; // Handle <xs:element name="myEmptyElement"/>
+            
         } else {
             throw new Error("Unknown element structure");
         }
@@ -171,7 +219,16 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
             elements = element.all.element;
             
         } else if (element.sequence) {
-            elements = element.sequence.element;
+            if(element.sequence.element) {
+                elements = element.sequence.element;    
+            
+            } else if(element.sequence.hasOwnProperty("any")) {
+                elements = [];
+            
+            } else {
+                throw new Error("Unknown complexType sequence structure");    
+            }
+            
             result["$order"] = [];
         
         } else {
@@ -408,3 +465,5 @@ function getServices(wsdlXml) {
 module.exports.schemasToDefinition = schemasToDefinition;
 module.exports.schemasToDefinition2 = schemasToDefinition2;
 module.exports.getServices = getServices;
+module.exports.wsdlToToDefinition = wsdlToToDefinition;
+module.exports.getSchemaXML = getSchemaXML;

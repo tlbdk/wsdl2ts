@@ -1,18 +1,20 @@
 var expat = require('node-expat');
 
 function toXML (obj, definition, parentName, indentation, level) {
+    // TODO: Support inlineAttibutes
+    // TODO: Support definition on obj
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
+    
+    var result = "";
+    var namespace = definition[parentName + "$namespace"] ? definition[parentName + "$namespace"] + ":" : "";
+    var attributes = definition[parentName + "$attributes"] || obj[parentName + "$attributes"] || {};
     
     if(level === 0) {
         // Go into first level
         obj = obj[parentName];
     }
-    
-    var result = "";
-    var namespace = definition[parentName + "$namespace"] ? definition[parentName + "$namespace"] + ":" : "";
-    var attributes = definition[parentName + "$attributes"] || {};
     
     var startElement = "<" + namespace +  parentName;
     Object.getOwnPropertyNames(attributes).forEach(function(key){
@@ -32,7 +34,7 @@ function toXML (obj, definition, parentName, indentation, level) {
         
     } else if(typeof obj === "object") {
         var keys = Object.getOwnPropertyNames(obj);
-        var orders = definition[parentName + "$orders"];
+        var orders = definition[parentName + "$order"];
         if(orders) {
             keys = keys.sort(function(a, b) {
                 orders.indexOf(a) - orders.indexOf(b);
