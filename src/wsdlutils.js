@@ -100,6 +100,7 @@ function schemasToDefinition2(schemas, namespaces) {
         var targetNamespace = schema.$targetNamespace; // TODO: Default to value
         schema.element.forEach(function (element) {
             // Save namespaces
+            // TODO: Optimize namespaces so we include the needed ones
             result[element.$name + "$attributes"] = {};
             Object.keys(namespaces).forEach(function (key) {
                 result[element.$name + "$attributes"]["xmlns:" + key] = namespaces[key];    
@@ -294,9 +295,7 @@ function _xsdTypeLookup(type) {
         case "unsignedShort": return "number";
         default: throw new Error("Unknown XSD type " + type);
     }
-    
 }
-
 
 function schemasToDefinition(element, targetNamespace, schemas, namespaces) {
     var elementLookup = {};
