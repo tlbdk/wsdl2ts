@@ -1,11 +1,61 @@
 /*eslint-env node, mocha */
 
-//var assert = require('assert');
 var chai = require('chai');
 var assert = chai.assert;
-//var merge = require('deepmerge');
 
 var XMLUtils = require('../src/xmlutils');
+
+describe('XMLUtils#toXML/fromXML mixed inline and definition', function () {
+  var sample_definition = {
+    "root$attributes": { "xmlns:myns": "http://tempuri.org" },
+    "root": {
+      "list$namespace": "myns",
+      "list$attributes": { "outer": "hello" },
+      "list": {
+        "item$namespace": "myns"
+      }
+    }
+  };
+
+  var sample_obj = {
+    "root": {
+      "$xmlns:xs": "http://www.w3.org/2001/XMLSchema", // Define a new namespace inline
+      "list": {
+        "xs:item": [
+          {
+            "$inline": "first",
+            "$": "value1"
+          },
+          {
+            "namespace$": "myns",
+            "$inline": "second",
+            "$": "value2"
+          },
+          "value3"
+        ],
+        "item": "after"
+      }
+    }
+  };
+
+  var sample_xml = [
+    '<root xmlns:myns="http://tempuri.org" xmlns:xs="http://www.w3.org/2001/XMLSchema">',
+    '  <myns:list outer="hello">',
+    '    <xs:item inline="first">value1</xs:item>',
+    '    <myns:item inline="second">value2</myns:item>',
+    '    <xs:item>value3</xs:item>',
+    '    <myns:item>after</myns:item>',
+    '  </myns:list>',
+    '</root>'
+  ].join("\n");
+
+  var generated_xml = XMLUtils.toXML(sample_obj, sample_definition, "root");
+
+  it('sample should convert to XML that looks the same as sample_xml', function () {
+    assert.strictEqual(sample_xml, generated_xml);
+  });
+});
+
 
 describe('XMLUtils#toXML/fromXML simple', function () {
   var sample_obj = {
@@ -35,14 +85,17 @@ describe('XMLUtils#toXML/fromXML simple', function () {
   ].join("\n");
 
   it('sample should convert to XML that looks the same as sample_xml', function () {
-    assert.strictEqual(sample_xml, XMLUtils.toXML(sample_obj, null, "root"));
+    var generated_xml = XMLUtils.toXML(sample_obj, null, "root");
+    assert.strictEqual(sample_xml, generated_xml);
   });
 
   it('should return the order of the elements and convert back to the same sample_xml', function () {
-    var obj = XMLUtils.fromXML(sample_xml);
-    assert.strictEqual(sample_xml, XMLUtils.toXML(obj, null, "root"));
-    assert.deepEqual(obj["root$order"], ["first", "second", "last"]);
-    assert.deepEqual(obj["root"]["first$order"], ["firstNested", "secondNested"]);
+    var generated_obj = XMLUtils.fromXML(sample_xml);
+    assert.deepEqual(generated_obj["root$order"], ["first", "second", "last"]);
+    assert.deepEqual(generated_obj["root"]["first$order"], ["firstNested", "secondNested"]);
+
+    var generated_xml = XMLUtils.toXML(generated_obj, null, "root");
+    assert.strictEqual(sample_xml, generated_xml);
   });
   
 });
@@ -51,11 +104,11 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
   var sample_obj = {
     "Envelope": {
       "Header": {
-        "$myObjectAttib": "aValue1", // TODO: support this
+        "$myObjectAttib": "aValue1",
         "arrays": {
           "array": [
             {
-              "$mySingleArrayAttrib": "test", // TODO: support this
+              "$mySingleArrayAttrib": "test",
               "key": "value1"
             },
             {
@@ -74,7 +127,7 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
         },
         "Fault": ""
       },
-      "soap:SameName": "name1", // TODO: Support this
+      "soap:SameName": "name1",
       "soap2:SameName": "name2",
       "isArray": ["Stuff"],
     }
@@ -98,7 +151,6 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
           "array$attributes": {
             "SameOnAll": "same"
           },
-          "array": ""
         }
       },
       "Body$namespace": "soap",
@@ -110,10 +162,7 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
         "values": {
           "value$namespace": "stuff",
           "value$type": [],
-          "value": ""
         },
-        "Fault": {
-        }
       },
       "isArray$type": [],
       "myns1:overlaps$type": [], // TODO: implement

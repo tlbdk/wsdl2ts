@@ -1,61 +1,88 @@
+"use strict";
+
 var expat = require('node-expat');
 
+
 function toXML (obj, definition, parentName, indentation, level) {
-    // TODO: Support inlineAttibutes
-    // TODO: Support definition on obj
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
     
     var result = "";
-    var namespace = definition[parentName + "$namespace"] ? definition[parentName + "$namespace"] + ":" : "";
-    var attributes = definition[parentName + "$attributes"] || obj[parentName + "$attributes"] || {};
-    
+    var namespace = "";
+    var nsOffset = parentName.indexOf(':');
+    if(nsOffset > - 1) {
+        namespace = parentName.substr(0, nsOffset) + ":";
+        parentName = parentName.substr(nsOffset + 1);
+
+    } else if(definition[parentName + "$namespace"]) {
+        namespace = definition[parentName + "$namespace"] + ":";
+    }
+    var attributes = definition[parentName + "$attributes"] || {};
+    var order = obj[parentName + "$order"] || definition[parentName + "$order"];
+
     if(level === 0) {
         // Go into first level
         obj = obj[parentName];
     }
-    
-    var startElement = "<" + namespace +  parentName;
-    Object.getOwnPropertyNames(attributes).forEach(function(key){
-        startElement += " " + key + '="' + attributes[key] + '"';
-    });
-    startElement += ">";
-    
-    var endElement = "</" + namespace + parentName + ">";
-    
+
+    var whitespace = " ".repeat(level * indentation);
+
     if(typeof obj === undefined || obj === null) {
         // TODO: Handle null types
         
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value) {
-            result += toXML(value, definition, parentName, indentation, level);
+            result += toXML(value, definition, namespace + parentName, indentation, level);
         });
         
     } else if(typeof obj === "object") {
         var keys = Object.getOwnPropertyNames(obj);
-        var orders = definition[parentName + "$order"];
-        if(orders) {
+        if(order) {
             keys = keys.sort(function(a, b) {
-                orders.indexOf(a) - orders.indexOf(b);
+                return order.indexOf(a) - order.indexOf(b);
             });
         }
-        
-        result += " ".repeat(level * indentation) + startElement + "\n";
+
+        let subResult = "";
         keys.forEach(function(key) {
-            if(key.indexOf("$") > -1) return; // Skip all definition information
-            result += toXML(obj[key], definition[parentName], key, indentation, level + 1);    
-        }); 
-        result += " ".repeat(level * indentation) + endElement + (level > 0 ? "\n" : "");    
+            if(key === "$") {
+                subResult += obj[key];
+
+            } else if(key === "namespace$") {
+                namespace = obj[key] + ":";
+
+            } else if(key.indexOf("$") == 0) {
+                attributes[key.substr(1)] = obj[key];
+
+            } else if(key.indexOf("$") > 0) {
+                // Skip definition information such as order
+
+            } else {
+                subResult += toXML(obj[key], definition[parentName], key, indentation, level + 1);
+            }
+        });
+
+        // Generate start and end tag
+        result += whitespace + "<" + namespace +  parentName;
+        Object.getOwnPropertyNames(attributes).forEach(function(key){
+            result += " " + key + '="' + attributes[key] + '"';
+        });
+        result += obj["$"] ? ">" + subResult : ">\n" + subResult + whitespace;
+        result += "</" + namespace + parentName + ">" + (level > 0 ? "\n" : "");
         
     } else {
-        result += " ".repeat(level * indentation) + startElement + obj + endElement + "\n";
+        result += whitespace + "<" + namespace +  parentName;
+        Object.getOwnPropertyNames(attributes).forEach(function(key){
+            result += " " + key + '="' + attributes[key] + '"';
+        });
+        result += ">" + obj + "</" + namespace + parentName + ">\n";
     }
     
     return result;
 }
 
-function fromXML (xml, objectDefinition, inlineAttibutes) {
+function fromXML (xml, objectDefinition, inlineAttributes) {
     var definitions = [objectDefinition || {}];
     
     var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
@@ -64,26 +91,35 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
     var currentObject = result;
     var objects = [];
     var names = [];
-    
-    //TODO: Save element orders
+
     var orders = [];
     
     parser.on('startElement', function(name, attributes) {
+        // TODO: Handle namespaces in a nice way
         // Parse namespace
         var ns = name.split(":");
         if(ns.length > 1) {
             name = ns[1];
             ns = ns[0];
         }
-        
+
         var definition = definitions[definitions.length - 1];
         var type = definition[name + "$type"];
         var nextObject = {};
         currentValue = ""; // TODO: Create $t value on object if this has data
-        
+
+        if(ns) {
+            if(inlineAttributes) {
+                nextObject["namespace" + "$"] = ns;
+
+            } else {
+                currentObject[name + "$namespace"] = ns;
+            }
+        }
+
         // Handle attributes
         if(Object.getOwnPropertyNames(attributes).length > 0) {
-            if(inlineAttibutes) {
+            if(inlineAttributes) {
                 Object.keys(attributes).forEach(function(key){
                     nextObject["$" + key] = attributes[key];
                 });
@@ -131,7 +167,7 @@ function fromXML (xml, objectDefinition, inlineAttibutes) {
         
         // Save order     
         if(orders.length <= names.length) {
-           orders.push([name]);
+            orders.push([name]);
             
         } else if(!Array.isArray(currentObject[name])) {
            orders[names.length].push(name);
