@@ -47,29 +47,26 @@ function wsdlToToDefinition(wsdlXml) {
 }
 
 function getSchemaXML(wsdlXml) {
-    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition);
+    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
     
     var namespaces = {};
-    // TODO: Fix 
     Object.keys(wsdlObj.definitions).forEach(function (key) {
-        var ns = key.match(/^\$xmlns:(.+)$/);
+        var ns = key.match(/^\$(xmlns:.+)$/);
         if (ns) {
             namespaces[ns[1]] = wsdlObj.definitions[key];
         }
     });
     
-    Object.keys(wsdlObj.definitions.types.schema$attributes[0]).forEach(function (key) {
+    /* Object.keys(wsdlObj.definitions.types.schema$attributes[0]).forEach(function (key) {
         namespaces[key] = wsdlObj.definitions.types.schema$attributes[0][key];
-    });
-    
+    }); */
+
     var schemaObj = {
-        schema$attributes: namespaces,
         schema: wsdlObj.definitions.types.schema[0]   
     };
     
-    var obj = XMLUtils.toXML(schemaObj, {}, "schema");
-    
-    return obj;
+    var schemaXml = XMLUtils.toXML(schemaObj, { schema$attributes: namespaces }, "schema");
+    return schemaXml;
 }
 
 
@@ -232,7 +229,8 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
             result["$order"] = [];
         
         } else {
-            throw new Error("Unknown complexType structure");
+            return; // TODO: Handle this a bit better
+            //throw new Error("Unknown complexType structure");
         }
         
         elements = Array.isArray(elements) ? elements : [elements];
