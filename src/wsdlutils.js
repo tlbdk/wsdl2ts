@@ -73,6 +73,7 @@ function getSchemaXML(wsdlXml) {
 // http://www.w3schools.com/xml/schema_elements_ref.asp
 
 function schemasToDefinition(schemas, namespaces) {
+    // TODO: Read namespaces from all levels
     // Make reverse lookup posible
     var namespaceToAlias = {};
     Object.keys(namespaces).forEach(function(key) {

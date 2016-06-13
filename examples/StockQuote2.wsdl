@@ -1,33 +1,33 @@
 <?xml version="1.0"?>
 <wsdl:definitions xmlns:tns="http://example.com/stockquote.wsdl" xmlns:xsd1="http://example.com/stockquote.xsd" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" name="StockQuote" targetNamespace="http://example.com/stockquote.wsdl">
   <wsdl:types>
-    <xsd:schema xmlns:xsd="http://www.w3.org/2000/10/XMLSchema" targetNamespace="http://example.com/stockquote.xsd">
-      <xsd:simpleType name="Trade">
-        <xsd:restriction base="string">
-          <xsd:enumeration value="AAPL"/>
-          <xsd:enumeration value="GOOG"/>
-        </xsd:restriction>
-      </xsd:simpleType>
-      <xsd:complexType name="ArrayOfTrade">
-        <xsd:sequence>
-          <xsd:element maxOccurs="unbounded" minOccurs="0" name="Trade" nillable="true" type="xsd1:Trade"/>
-        </xsd:sequence>
-      </xsd:complexType>
-      <xsd:element name="TradePriceRequest">
-        <xsd:complexType>
-          <xsd:sequence>
-            <xsd:element maxOccurs="1" minOccurs="1" name="tradeList" nillable="true" type="xsd1:ArrayOfTrade"/>
-          </xsd:sequence>
-        </xsd:complexType>
-      </xsd:element>
-      <xsd:element name="TradePrice">
-        <xsd:complexType>
-          <xsd:all>
-            <xsd:element name="price" type="float"/>
-          </xsd:all>
-        </xsd:complexType>
-      </xsd:element>
-    </xsd:schema>
+    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://example.com/stockquote.xsd">
+      <xs:simpleType name="Trade">
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="AAPL"/>
+          <xs:enumeration value="GOOG"/>
+        </xs:restriction>
+      </xs:simpleType>
+      <xs:complexType name="ArrayOfTrade">
+        <xs:sequence>
+          <xs:element maxOccurs="unbounded" minOccurs="0" name="Trade" nillable="true" type="xsd1:Trade"/>
+        </xs:sequence>
+      </xs:complexType>
+      <xs:element name="TradePriceRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element maxOccurs="1" minOccurs="1" name="tradeList" nillable="true" type="xsd1:ArrayOfTrade"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+      <xs:element name="TradePrice">
+        <xs:complexType>
+          <xs:all>
+            <xs:element name="price" type="xs:float"/>
+          </xs:all>
+        </xs:complexType>
+      </xs:element>
+    </xs:schema>
   </wsdl:types>
   <wsdl:message name="GetLastTradePriceInput">
     <wsdl:part name="body" element="xsd1:TradePriceRequest"/>

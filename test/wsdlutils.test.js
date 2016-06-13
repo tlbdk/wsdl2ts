@@ -6,8 +6,11 @@
 var chai = require('chai');
 var assert = chai.assert;
 var schemasToDefinition = require('../src/wsdlutils.js').schemasToDefinition;
+var getSchemaXML = require('../src/wsdlutils.js').getSchemaXML;
+var wsdlToToDefinition = require('../src/wsdlutils.js').wsdlToToDefinition;
 var XMLUtils = require('../src/xmlutils');
 var fs = require('fs');
+var xsd = require('libxml-xsd');
 
 //TODO: http://www.w3schools.com/xml/schema_facets.asp , support validations
 
@@ -272,6 +275,23 @@ describe('xsdToDefinition test', function () {
         
         var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
         assert.deepEqual(definition, expected_definition);
+    });
+});
+
+describe("getSchemaXML", function() {
+    it("extract XSD and validate request", function () {
+        var wsdlXml = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
+        var schemaXML = getSchemaXML(wsdlXml);
+        var definition = wsdlToToDefinition(wsdlXml);
+
+        var sample = {
+            "test": ""
+        };
+
+        XMLUtils.toXML(sample, definition, "test");
+
+
+        var schema = xsd.parse(schemaXML);
     });
 });
 
