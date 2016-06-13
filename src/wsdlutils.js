@@ -42,7 +42,7 @@ function wsdlToToDefinition(wsdlXml) {
         }
     });
     
-    var definition = schemasToDefinition2(wsdlObj.definitions.types.schema, namespaces);
+    var definition = schemasToDefinition(wsdlObj.definitions.types.schema, namespaces);
     return definition;
 }
 
@@ -72,7 +72,7 @@ function getSchemaXML(wsdlXml) {
 
 // http://www.w3schools.com/xml/schema_elements_ref.asp
 
-function schemasToDefinition2(schemas, namespaces) {
+function schemasToDefinition(schemas, namespaces) {
     // Make reverse lookup posible
     var namespaceToAlias = {};
     Object.keys(namespaces).forEach(function(key) {
@@ -297,129 +297,6 @@ function _xsdTypeLookup(type) {
     }
 }
 
-function schemasToDefinition(element, targetNamespace, schemas, namespaces) {
-    var elementLookup = {};
-    schemas.forEach(function (schema) {
-        ['simpleType', 'complexType', 'element'].forEach(function (xsdType) {
-           (schema[xsdType] || []).forEach(function (type) {
-               var name = type.$name;
-               // TODO : Support namespaces
-               var ns = name.split(":");
-               if (ns.length > 1) {
-                   name = ns[1];
-                   ns = ns[0];
-               }
-               
-               if(xsdType === 'element') {
-                   elementLookup[name] = type;
-
-               } else {
-                   // Convert all types to elements
-                   elementLookup[name] = { $name: name };
-                   elementLookup[name][xsdType] = type;
-               }
-           });
-        });
-    });
-    
-    return _schemasToDefinition(element, targetNamespace, elementLookup, namespaces);
-}
-
-function _schemasToDefinition(element, targetNamespace, typeLookup, namespaces) {
-    var result = {};
-    if (element.$type || element.simpleType) {
-        var type;
-        if(element.$type) {
-            type = element.$type;
-              
-        } else if(element.simpleType.restriction) {
-            type = element.simpleType.restriction.$base;
-            
-        } else if(element.simpleType.list) {
-            type = element.simpleType.list.$itemType;
-        
-        } else {
-            throw new Error("Unknown simpleType type");
-        }
-        
-        // TODO: Support namespaces
-        var ns = type.split(":");
-        if (ns.length > 1) {
-            type = ns[1];
-            ns = ns[0];
-        } else {
-            ns = "";
-        }
-        
-        if((element.$maxOccurs || 0) > 1) {
-            result[element.$name + "$type"] = [];
-        }
-        
-        // TODO: look up type to see if we need to dive into another object
-        switch(type) {
-            case "string": {
-                result[element.$name] = ""; 
-                break;
-            }
-            case "short": {
-                result[element.$name] = ""; 
-                break;
-            }
-            case "int": {
-                result[element.$name] = ""; 
-                break;
-            }
-            case "decimal": {
-                result[element.$name] = ""; 
-                break;
-            }
-            case "base64Binary": {
-                result[element.$name] = ""; 
-                break;
-            }
-            default: {
-                var subElement = typeLookup[type];
-                if(subElement){
-                    var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
-                    result[element.$name] = subResult[subElement.$name];
-                    
-                } else {
-                    console.log(JSON.stringify(element, null, 2));
-                    throw new Error("Unknown type");
-                }
-            }
-        }
-        
-            
-    } else if (element.complexType) {
-        var elements;
-        result[element.$name] = {};
-        if(element.complexType.all) { 
-            elements = element.complexType.all.element;  
-             
-        } else if(element.complexType.sequence) {
-            elements = element.complexType.sequence.element;
-            result[element.$name + "$order"] = [];
-        
-        } else {
-            throw new Error("Unknown complexType type");
-        }
-        
-        elements = Array.isArray(elements) ? elements : [elements];
-        elements.forEach(function(subElement) {
-            var subResult = _schemasToDefinition(subElement, targetNamespace, typeLookup, namespaces);
-            Object.keys(subResult).forEach(function (key) {
-                result[element.$name][key] = subResult[key];
-            });
-            if(result.hasOwnProperty(element.$name + "$order")) {
-                result[element.$name + "$order"].push(subElement.$name);    
-            }
-        });
-    }
-    
-    return result;
-}
-
 function getServices(wsdlXml) {
     var wsdlobj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
     var definitions = wsdlobj.definitions;
@@ -458,9 +335,7 @@ function getServices(wsdlXml) {
     return result;
 }
 
-
 module.exports.schemasToDefinition = schemasToDefinition;
-module.exports.schemasToDefinition2 = schemasToDefinition2;
 module.exports.getServices = getServices;
 module.exports.wsdlToToDefinition = wsdlToToDefinition;
 module.exports.getSchemaXML = getSchemaXML;

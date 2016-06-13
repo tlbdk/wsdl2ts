@@ -6,13 +6,12 @@
 var chai = require('chai');
 var assert = chai.assert;
 var schemasToDefinition = require('../src/wsdlutils.js').schemasToDefinition;
-var schemasToDefinition2 = require('../src/wsdlutils.js').schemasToDefinition2;
 var XMLUtils = require('../src/xmlutils');
 var fs = require('fs');
 
 //TODO: http://www.w3schools.com/xml/schema_facets.asp , support validations
 
-describe('schemasToDefinition2', function () {
+describe('schemasToDefinition', function () {
     it('Most used XSD types', function () {
         var xsd_simple = {
             "schema": [
@@ -161,7 +160,7 @@ describe('schemasToDefinition2', function () {
             refrencedSimpleRestriction: "",
         };
         
-        var definition = schemasToDefinition2(xsd_simple.schema, namespaces);    
+        var definition = schemasToDefinition(xsd_simple.schema, namespaces);
         //console.log(JSON.stringify(definition, null, 2));
         
         assert.deepEqual(definition, expected_definition);
@@ -170,94 +169,109 @@ describe('schemasToDefinition2', function () {
 });
 
 describe('xsdToDefinition test', function () {
-    it('xsd_simple with refrences', function () {
-        var xsd_schema_simple = [{
-            "$elementFormDefault": "qualified",
-            "$targetNamespace": "http://tempuri.org",
-            "element": [
+    it('xsd_simple with references', function () {
+        var xsd_schema_simple = {
+            schema: [
                 {
-                    "$name": "MyElement",
-                    "$type": "myns:MyType",
-                },
-            ],
-            "simpleType": [
-                {
-                    "$name": "MyType",
-                    "restriction": {
-                        "$base": "xs:string",
-                        "maxLength": {
-                            "$value": "8"
+                    "$elementFormDefault": "qualified",
+                    "$targetNamespace": "http://tempuri.org",
+                    "element": [
+                        {
+                            "$name": "MyElement",
+                            "$type": "myns:MyType",
+                        },
+                    ],
+                    "simpleType": [
+                        {
+                            "$name": "MyType",
+                            "restriction": {
+                                "$base": "xs:string",
+                                "maxLength": {
+                                    "$value": "8"
+                                }
+                            }
                         }
-                    }
+                    ],
                 }
-            ],
-        }];
+            ]
+        };
         
         var namespaces = {
-          "xmlns:myns": "http://tempuri.org",
-          "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+          "myns": "http://tempuri.org",
+          "xs": "http://www.w3.org/2001/XMLSchema"
         };
         
         var expected_definition = {
-            MyElement: ""
+            MyElement: "",
+            MyElement$attributes: {
+                "xmlns:xs":  "http://www.w3.org/2001/XMLSchema",
+                "xmlns:myns": "http://tempuri.org"
+            },
+            MyElement$namespace: "myns",
+            MyElement$type: "",
         };
         
-        var definition = schemasToDefinition(xsd_schema_simple[0].element[0], xsd_schema_simple[0].$targetNamespace, xsd_schema_simple, namespaces);
+        var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
         assert.deepEqual(definition, expected_definition);
     });
     
-    it('xsd_complexTypeSequence with refrences', function () {
-        var xsd_schema_simple = [{
-            "$elementFormDefault": "qualified",
-            "$targetNamespace": "http://tempuri.org",
-            "element": [
+    it('xsd_complexTypeSequence with references', function () {
+        var xsd_schema_simple = {
+            schema: [
                 {
-                    "$name": "MyElement",
-                    "$type": "myns:TradePriceRequest",
-                },
-            ],
-            "complexType": [
-                {
-                    "$name": "TradePriceRequest",
-                    "sequence": {
-                        "element": [
-                            {
-                                "$name": "tickerSymbol1",
-                                "$type": "xs:string"
-                            },
-                            {
-                                "$name": "tickerSymbol2",
-                                "$type": "xs:string"
+                    "$elementFormDefault": "qualified",
+                    "$targetNamespace": "http://tempuri.org",
+                    "element": [
+                        {
+                            "$name": "MyElement",
+                            "$type": "myns:TradePriceRequest",
+                        },
+                    ],
+                    "complexType": [
+                        {
+                            "$name": "TradePriceRequest",
+                            "sequence": {
+                                "element": [
+                                    {
+                                        "$name": "tickerSymbol1",
+                                        "$type": "xs:string"
+                                    },
+                                    {
+                                        "$name": "tickerSymbol2",
+                                        "$type": "xs:string"
+                                    }
+                                ]
                             }
-                        ]
-                    }
+                        }
+                    ],
                 }
-            ],
-        }];
+            ]
+        };
 
         var namespaces = {
-          "xmlns:myns": "http://tempuri.org",
-          "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+          "myns": "http://tempuri.org",
+          "xs": "http://www.w3.org/2001/XMLSchema"
         };
         
         var expected_definition = {
             MyElement: {
                 tickerSymbol1: "",
-                tickerSymbol2: ""
-            }
+                tickerSymbol1$namespace: "myns",
+                tickerSymbol1$type: "",
+                tickerSymbol2: "",
+                tickerSymbol2$namespace: "myns",
+                tickerSymbol2$type: "",
+            },
+            MyElement$attributes: {
+                "xmlns:myns": "http://tempuri.org",
+                "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+            },
+            MyElement$namespace: "myns",
+            MyElement$order: ["tickerSymbol1", "tickerSymbol2"]
         };
         
-        var definition = schemasToDefinition(xsd_schema_simple[0].element[0], xsd_schema_simple[0].$targetNamespace, xsd_schema_simple, namespaces);
+        var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
         assert.deepEqual(definition, expected_definition);
-    });
-    
-
-    it('xml_xsd_test', function () {
-        var contents = fs.readFileSync("../REST2SOAPTest/rest2soap-test-kotlin/src/main/resources/checkCustomer.wsdl", 'utf8');
-        var obj = XMLUtils.fromXML(contents, null, true);
-        
-        var out = schemasToDefinition(obj.definitions.types.schema.element[2], "stuff", [obj.definitions.types.schema], null);
-        console.log(JSON.stringify(out, null, 2));
     });
 });
 
