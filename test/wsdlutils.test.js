@@ -120,18 +120,14 @@ describe('schemasToDefinition', function () {
             plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             plain$type: "",
             plain$namespace: "myns",
-            plain: "",
             simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             simple$type: "",
             simple$namespace: "myns",
-            simple: "",
             complexAll$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             complexAll$namespace: "myns",
             complexAll: {
-                tickerSymbola: "",
                 tickerSymbola$type: "",
                 tickerSymbola$namespace: "myns",
-                tickerSymbolb: "",
                 tickerSymbolb$type: "",
                 tickerSymbolb$namespace: "myns",
             },
@@ -139,10 +135,8 @@ describe('schemasToDefinition', function () {
             complexSequence$order: ["tickerSymbol1", "tickerSymbol2"],
             complexSequence$namespace: "myns",
             complexSequence: {
-                tickerSymbol1: "",
                 tickerSymbol1$type: "",
                 tickerSymbol1$namespace: "myns",
-                tickerSymbol2: "",
                 tickerSymbol2$type: "",
                 tickerSymbol2$namespace: "myns",
             },
@@ -150,17 +144,14 @@ describe('schemasToDefinition', function () {
             refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
             refrencedComplexSequence$namespace: "myns",
             refrencedComplexSequence: {
-                tickerSymbolx: "",
                 tickerSymbolx$type: "",
                 tickerSymbolx$namespace: "myns",
-                tickerSymboly: "",
                 tickerSymboly$type: "",
                 tickerSymboly$namespace: "myns",
             },
             refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             refrencedSimpleRestriction$type: "",
             refrencedSimpleRestriction$namespace: "myns",
-            refrencedSimpleRestriction: "",
         };
         
         var definition = schemasToDefinition(xsd_simple.schema, namespaces);
@@ -205,7 +196,6 @@ describe('xsdToDefinition test', function () {
         };
         
         var expected_definition = {
-            MyElement: "",
             MyElement$attributes: {
                 "xmlns:xs":  "http://www.w3.org/2001/XMLSchema",
                 "xmlns:myns": "http://tempuri.org"
@@ -258,10 +248,8 @@ describe('xsdToDefinition test', function () {
         
         var expected_definition = {
             MyElement: {
-                tickerSymbol1: "",
                 tickerSymbol1$namespace: "myns",
                 tickerSymbol1$type: "",
-                tickerSymbol2: "",
                 tickerSymbol2$namespace: "myns",
                 tickerSymbol2$type: "",
             },
@@ -281,17 +269,45 @@ describe('xsdToDefinition test', function () {
 describe("getSchemaXML", function() {
     it("extract XSD and validate request", function () {
         var wsdlXml = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
-        var schemaXML = getSchemaXML(wsdlXml);
-        var definition = wsdlToToDefinition(wsdlXml);
 
-        var sample = {
-            "test": ""
+        var expected_definition = {
+            TradePrice$attributes: {
+                "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
+                "xmlns:tns": "http://example.com/stockquote.wsdl",
+                "xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+                "xmlns:xsd1": "http://example.com/stockquote.xsd"
+            },
+            TradePrice$namespace: "xsd1",
+            TradePrice: {
+                price$type: ""
+            },
+            TradePriceRequest$attributes: {
+                "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
+                "xmlns:tns": "http://example.com/stockquote.wsdl",
+                "xmlns:xs": "http://www.w3.org/2001/XMLSchema",
+                "xmlns:xsd1": "http://example.com/stockquote.xsd"
+            },
+            TradePriceRequest$namespace: "xsd1",
+            TradePriceRequest: {
+                tickerSymbol$type: ""
+            }
         };
 
-        XMLUtils.toXML(sample, definition, "test");
+        var definition = wsdlToToDefinition(wsdlXml);
+        assert.deepEqual(expected_definition, definition);
 
+        var sample_obj = {
+            TradePriceRequest: {
+                tickerSymbol: "GOOG"
+            }
+        };
 
+        // Validate schema against generated XML
+        var sample_xml = XMLUtils.toXML(sample_obj, definition, "TradePriceRequest");
+        var schemaXML = getSchemaXML(wsdlXml);
         var schema = xsd.parse(schemaXML);
+        var validationErrors = schema.validate(sample_xml);
+        assert.equal(null, validationErrors);
     });
 });
 

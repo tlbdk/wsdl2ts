@@ -31,17 +31,9 @@ var wsdlDefinition = {
    }
 };
 
-function wsdlToToDefinition(wsdlXml) {
+function wsdlToToDefinition(wsdlXml, originalNamespaces) {
     var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
-
-    var namespaces = {};
-    Object.keys(wsdlObj.definitions).forEach(function (key) {
-        var ns = key.match(/^\$xmlns:(.+)$/);
-        if (ns) {
-            namespaces[ns[1]] = wsdlObj.definitions[key];
-        }
-    });
-    
+    var namespaces = _extractAndAddNamespaces(wsdlObj.definitions, originalNamespaces);
     var definition = schemasToDefinition(wsdlObj.definitions.types.schema, namespaces);
     return definition;
 }
@@ -69,9 +61,7 @@ function getSchemaXML(wsdlXml) {
     return schemaXml;
 }
 
-
 // http://www.w3schools.com/xml/schema_elements_ref.asp
-
 function schemasToDefinition(schemas, namespaces) {
     // TODO: Read namespaces from all levels
     // Make reverse lookup posible
@@ -85,6 +75,9 @@ function schemasToDefinition(schemas, namespaces) {
     schemas.forEach(function (schema) {
         var targetNamespace = schema.$targetNamespace; // TODO: Default to value
         var targetNamespaceAlias = namespaceToAlias[targetNamespace] || ""; // TODO: Die if we can't find the namespace
+        if(!targetNamespaceAlias) {
+            throw new Error("Unable to find alias for target namespace");
+        }
         ['simpleType', 'complexType', 'element'].forEach(function (xsdType) {
            (schema[xsdType] || []).forEach(function (type) {
                var name = type.$name;
@@ -98,19 +91,28 @@ function schemasToDefinition(schemas, namespaces) {
     // Get definitions for all the elements
     var result = {};
     schemas.forEach(function (schema) {
+        var elementFormQualified = schema.$elementFormDefault === "qualified";
+        var attributeFormQualified = schema.attributeFormDefault === "qualified"; // TODO: implement
         var targetNamespace = schema.$targetNamespace; // TODO: Default to value
+        var schemaNamespaces = _extractAndAddNamespaces(schema, namespaces);
         schema.element.forEach(function (element) {
+            var elementNamespaces = _extractAndAddNamespaces(schema, schemaNamespaces);
+
             // Save namespaces
             // TODO: Optimize namespaces so we include the needed ones
             result[element.$name + "$attributes"] = {};
-            Object.keys(namespaces).forEach(function (key) {
-                result[element.$name + "$attributes"]["xmlns:" + key] = namespaces[key];    
+            Object.keys(elementNamespaces).forEach(function (key) {
+                result[element.$name + "$attributes"]["xmlns:" + key] = elementNamespaces[key];
             });
 
             // Generate definition for element and copy it to result
-            var definition = _elementToDefinition("element", element, targetNamespace, typeLookupMap, namespaces);
+            var definition = _elementToDefinition("element", element, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
             Object.keys(definition).forEach(function (key) {
-                result[key] = definition[key];    
+                result[key] = definition[key];
+                if(!elementFormQualified) {
+                    // Set namespace on root elements if the elementForm == Unqualified
+                    result[key + "$namespace"] = namespaceToAlias[targetNamespace];
+                }
             });
         });
     });
@@ -118,11 +120,24 @@ function schemasToDefinition(schemas, namespaces) {
     return result;
 }
 
-function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, namespaces){
-    // Make reverse lookup posible
+function _extractAndAddNamespaces(element, originalNamespaces) {
+    var namespaces = originalNamespaces ? Object.assign({}, originalNamespaces) : {};
+    Object.keys(element).forEach(function(key) {
+        var ns = key.match(/^\$xmlns:(.+)$/);
+        if (ns) {
+            namespaces[ns[1]] = element[key];
+        }
+    });
+    return namespaces;
+}
+
+function _elementToDefinition(xsdType, element, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, namespaces){
+    var elementNamespaces = _extractAndAddNamespaces(element, namespaces);
+
+    // Make reverse lookup possible
     var namespaceToAlias = {};
-    Object.keys(namespaces).forEach(function(key) {
-       namespaceToAlias[namespaces[key]] = key; 
+    Object.keys(elementNamespaces).forEach(function(key) {
+       namespaceToAlias[elementNamespaces[key]] = key;
     });
     
     var result = {};
@@ -147,8 +162,8 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
             
         } else if (element.complexType) {
             type = "object";
-            subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, typeLookupMap, namespaces);
-        
+            subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
+
         } else if (element.hasOwnProperty("complexType")) {
             type = "object"; // Handle <xs:element name="myEmptyElement"><xs:complexType/>...
             
@@ -161,10 +176,10 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
         
         if(type !== "object") {
             // Resolve type namespace
-            var typeNamespace = _namespaceLookup(type, namespaces);
+            var typeNamespace = _namespaceLookup(type, elementNamespaces);
 
             if (typeNamespace.ns === "http://www.w3.org/2001/XMLSchema") {
-                // TODO: Save types for typescript intefaces
+                // TODO: Save types for typescript interfaces
                 _xsdTypeLookup(typeNamespace.name);
                 result[element.$name + "$type"] = "";
             
@@ -174,7 +189,7 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
                 var subXsdType = typeLookupMap["#" + type + "$xsdType"];
                 if (subElement) {
                     if (subXsdType === "complexType" || subXsdType === "element") {
-                        subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, typeLookupMap, namespaces);
+                        subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
 
                     } else if (subXsdType === "simpleType") {
                         result[element.$name + "$type"] = "";
@@ -201,11 +216,13 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
             });
             
         } else {
-            result[element.$name] = "";
+            //result[element.$name] = "";
         }
-        
-        // Save namespace
-        result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
+
+        if(elementFormQualified) {
+            // Save namespace
+            result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
+        }
         
         // Check if this type is an array
         if ((element.$maxOccurs || 0) > 1) {
@@ -237,7 +254,7 @@ function _elementToDefinition(xsdType, element, targetNamespace, typeLookupMap, 
         
         elements = Array.isArray(elements) ? elements : [elements];
         elements.forEach(function(subElement) {
-            var subResult = _elementToDefinition("element", subElement, targetNamespace, typeLookupMap, namespaces);
+            var subResult = _elementToDefinition("element", subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, namespaces);
             Object.keys(subResult).forEach(function (key) {
                 result[key] = subResult[key];
             });
@@ -258,7 +275,7 @@ function _namespaceLookup(name, namespaces) {
             result = { name: ns[1], ns: namespaces[ns[0]] };
 
         } else {
-            throw new Error("Could not find namespace alias '" + ns + "'");
+            throw new Error("Could not find namespace alias '" + name + "'");
         }
         
     } else {
