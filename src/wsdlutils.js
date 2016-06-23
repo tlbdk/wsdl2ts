@@ -110,6 +110,7 @@ function schemasToDefinition(schemas, namespaces) {
             Object.keys(definition).forEach(function (key) {
                 result[key] = definition[key];
                 if(!elementFormQualified) {
+                    // TODO: sent on root object so we can extract it later
                     // Set namespace on root elements if the elementForm == Unqualified
                     result[key + "$namespace"] = namespaceToAlias[targetNamespace];
                 }
