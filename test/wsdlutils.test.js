@@ -1,6 +1,6 @@
 /*eslint-env node, mocha */
 
-// https://github.com/holidayextras/wsdl2.js    
+// https://github.com/holidayextras/wsdl2.js
 
 //var assert = require('assert');
 var chai = require('chai');
@@ -79,7 +79,13 @@ describe('schemasToDefinition', function () {
                         {
                             "$name": "refrencedSimpleRestriction",
                             "$type": "myns:verySimpleType"
-                        }
+                        },
+                        {
+                            "$name": "plainArray",
+                            "$type": "xs:string",
+                            "$maxOccurs": "2",
+                            "minOccurs": "0"
+                        },
                     ],
                     "complexType": [
                         {
@@ -110,16 +116,19 @@ describe('schemasToDefinition', function () {
                 }
             ]
         };
-        
+
          var namespaces = {
           "myns": "http://tempuri.org",
           "xs": "http://www.w3.org/2001/XMLSchema"
         };
-        
+
         var expected_definition = {
             plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             plain$type: "string",
             plain$namespace: "myns",
+            plainArray$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            plainArray$type: ["string"],
+            plainArray$namespace: "myns",
             simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             simple$type: "string",
             simple$namespace: "myns",
@@ -153,13 +162,13 @@ describe('schemasToDefinition', function () {
             refrencedSimpleRestriction$type: "string",
             refrencedSimpleRestriction$namespace: "myns",
         };
-        
+
         var definition = schemasToDefinition(xsd_simple.schema, namespaces);
         //console.log(JSON.stringify(definition, null, 2));
-        
+
         assert.deepEqual(definition, expected_definition);
     });
-    
+
 });
 
 describe('xsdToDefinition test', function () {
@@ -189,12 +198,12 @@ describe('xsdToDefinition test', function () {
                 }
             ]
         };
-        
+
         var namespaces = {
           "myns": "http://tempuri.org",
           "xs": "http://www.w3.org/2001/XMLSchema"
         };
-        
+
         var expected_definition = {
             MyElement$attributes: {
                 "xmlns:xs":  "http://www.w3.org/2001/XMLSchema",
@@ -203,11 +212,11 @@ describe('xsdToDefinition test', function () {
             MyElement$namespace: "myns",
             MyElement$type: "string",
         };
-        
+
         var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
         assert.deepEqual(definition, expected_definition);
     });
-    
+
     it('xsd_complexTypeSequence with references', function () {
         var xsd_schema_simple = {
             schema: [
@@ -245,7 +254,7 @@ describe('xsdToDefinition test', function () {
           "myns": "http://tempuri.org",
           "xs": "http://www.w3.org/2001/XMLSchema"
         };
-        
+
         var expected_definition = {
             MyElement: {
                 tickerSymbol1$namespace: "myns",
@@ -260,7 +269,7 @@ describe('xsdToDefinition test', function () {
             MyElement$namespace: "myns",
             MyElement$order: ["tickerSymbol1", "tickerSymbol2"]
         };
-        
+
         var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
         assert.deepEqual(definition, expected_definition);
     });

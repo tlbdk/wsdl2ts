@@ -9,7 +9,7 @@ var wsdlDefinition = {
            "schema": {
                "element$type": [],
                "simpleType$type": [],
-               "complexType$type": [],   
+               "complexType$type": [],
             }
        },
        "message$type": [],
@@ -23,7 +23,7 @@ var wsdlDefinition = {
        },
        "binding$type": [],
        "binding": {
-           "operation$type": [],      
+           "operation$type": [],
        },
        "service$type": [],
        "service": {
@@ -41,7 +41,7 @@ function wsdlToDefinition(wsdlXml, originalNamespaces) {
 
 function getSchemaXML(wsdlXml) {
     var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
-    
+
     var namespaces = {};
     Object.keys(wsdlObj.definitions).forEach(function (key) {
         var ns = key.match(/^\$(xmlns:.+)$/);
@@ -49,15 +49,15 @@ function getSchemaXML(wsdlXml) {
             namespaces[ns[1]] = wsdlObj.definitions[key];
         }
     });
-    
+
     /* Object.keys(wsdlObj.definitions.types.schema$attributes[0]).forEach(function (key) {
         namespaces[key] = wsdlObj.definitions.types.schema$attributes[0][key];
     }); */
 
     var schemaObj = {
-        schema: wsdlObj.definitions.types.schema[0]   
+        schema: wsdlObj.definitions.types.schema[0]
     };
-    
+
     var schemaXml = XMLUtils.toXML(schemaObj, { schema$attributes: namespaces }, "schema");
     return schemaXml;
 }
@@ -68,9 +68,9 @@ function schemasToDefinition(schemas, namespaces) {
     // Make reverse lookup posible
     var namespaceToAlias = {};
     Object.keys(namespaces).forEach(function(key) {
-       namespaceToAlias[namespaces[key]] = key; 
+       namespaceToAlias[namespaces[key]] = key;
     });
-    
+
     // Build type lookup cache
     var typeLookupMap = {};
     schemas.forEach(function (schema) {
@@ -88,7 +88,7 @@ function schemasToDefinition(schemas, namespaces) {
            });
         });
     });
-    
+
     // Get definitions for all the elements
     var result = {};
     schemas.forEach(function (schema) {
@@ -118,7 +118,7 @@ function schemasToDefinition(schemas, namespaces) {
             });
         });
     });
-    
+
     return result;
 }
 
@@ -141,16 +141,16 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
     Object.keys(elementNamespaces).forEach(function(key) {
        namespaceToAlias[elementNamespaces[key]] = key;
     });
-    
+
     var result = {};
     var subResult;
     var type;
-    
+
     if (xsdType === "element") {
         // Extract type
         if (element.$type) {
             type = element.$type;
-        
+
         } else if (element.simpleType) {
             if (element.simpleType.restriction) {
                 type = element.simpleType.restriction.$base;
@@ -161,21 +161,21 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
             } else {
                 throw new Error("Unknown simpleType structure");
             }
-            
+
         } else if (element.complexType) {
             type = "object";
             subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
 
         } else if (element.hasOwnProperty("complexType")) {
             type = "object"; // Handle <xs:element name="myEmptyElement"><xs:complexType/>...
-            
+
         } else if (Object.keys(element).length === 0) {
             type = "object"; // Handle <xs:element name="myEmptyElement"/>
-            
+
         } else {
             throw new Error("Unknown element structure");
         }
-        
+
         if(type !== "object") {
             for(let i= 0; i <= 3; i++) {
                 if(i === 3) {
@@ -220,18 +220,18 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
                     }
                 }
             }
-        } 
-        
+        }
+
         if(subResult) {
             result[element.$name] = {};
             Object.keys(subResult).forEach(function (key) {
                 if(key.startsWith("$")) {
                     result[element.$name + key] = subResult[key];
                 } else {
-                    result[element.$name][key] = subResult[key];    
+                    result[element.$name][key] = subResult[key];
                 }
             });
-            
+
         } else {
             //result[element.$name] = "";
         }
@@ -240,35 +240,35 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
             // Save namespace
             result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
         }
-        
+
         // Check if this type is an array
-        if ((element.$maxOccurs || 0) > 1) {
-            result[element.$name + "$type"] = [];
+        if ((element.$maxOccurs ===  "unbounded" ? Number.MAX_VALUE : (element.$maxOccurs || 0)) > 1) {
+            result[element.$name + "$type"] = [result[element.$name + "$type"]];
         }
-        
+
     } else if(xsdType === "complexType") {
         var elements;
         if(element.all) {
             elements = element.all.element;
-            
+
         } else if (element.sequence) {
             if(element.sequence.element) {
-                elements = element.sequence.element;    
-            
+                elements = element.sequence.element;
+
             } else if(element.sequence.hasOwnProperty("any")) {
                 elements = [];
-            
+
             } else {
-                throw new Error("Unknown complexType sequence structure");    
+                throw new Error("Unknown complexType sequence structure");
             }
-            
+
             result["$order"] = [];
-        
+
         } else {
             return; // TODO: Handle this a bit better
             //throw new Error("Unknown complexType structure");
         }
-        
+
         elements = Array.isArray(elements) ? elements : [elements];
         elements.forEach(function(subElement) {
             var subResult = _elementToDefinition("element", subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, namespaces);
@@ -295,13 +295,13 @@ function _namespaceLookup(name, namespaces) {
         } else {
             throw new Error("Could not find namespace alias '" + name + "'");
         }
-        
+
     } else {
         result = { name: name, ns: "" };
     }
-    
+
     return result;
-} 
+}
 
 function _xsdTypeLookup(type) {
     // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
@@ -338,28 +338,28 @@ function getServices(wsdlXml) {
     var definitions = wsdlobj.definitions;
     var result = {};
     // TODO: Support namespaces
-    
+
     var schemas = {};
     definitions.types.schema.forEach(function (schema) {
         schema.element.forEach(function (element) {
             schemas[element.$name] = element;
         });
     });
-    
+
     definitions.service.forEach(function(service){
         result[service.$name] = {};
         service.port.forEach(function(port){
             result[service.$name][port.$name] = {};
             var binding = definitions.binding.filter(function(binding) { return binding.$name === port.$binding.replace(/^[^:]+:/, ""); })[0];
             var portType = definitions.portType.filter(function(portType) { return portType.$name === binding.$type.replace(/^[^:]+:/, "") })[0];
-            
+
             portType.operation.forEach(function(operation) {
                 var inputMessage = definitions.message.filter(function(message) { return message.$name === operation.input.$message.replace(/^[^:]+:/, "") })[0];
                 //var inputElement = schemasToDefinition(inputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
                 // TODO: Support more than one part
                 var outputMessage = definitions.message.filter(function(message) { return message.$name === operation.output.$message.replace(/^[^:]+:/, "") })[0];
                 //var outputElement = schemasToDefinition(outputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
-                                
+
                 result[service.$name][port.$name][operation.$name] = {
                     input: inputElement,
                     output: outputElement
@@ -367,7 +367,7 @@ function getServices(wsdlXml) {
             });
         });
     });
-    
+
     return result;
 }
 
