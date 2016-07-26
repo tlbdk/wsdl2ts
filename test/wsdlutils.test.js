@@ -7,7 +7,7 @@ var chai = require('chai');
 var assert = chai.assert;
 var schemasToDefinition = require('../src/wsdlutils.js').schemasToDefinition;
 var getSchemaXML = require('../src/wsdlutils.js').getSchemaXML;
-var wsdlToToDefinition = require('../src/wsdlutils.js').wsdlToToDefinition;
+var wsdlToToDefinition = require('../src/wsdlutils.js').wsdlToDefinition;
 var XMLUtils = require('../src/xmlutils');
 var fs = require('fs');
 var xsd = require('libxml-xsd');
@@ -118,39 +118,39 @@ describe('schemasToDefinition', function () {
         
         var expected_definition = {
             plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
-            plain$type: "",
+            plain$type: "string",
             plain$namespace: "myns",
             simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
-            simple$type: "",
+            simple$type: "string",
             simple$namespace: "myns",
             complexAll$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             complexAll$namespace: "myns",
             complexAll: {
-                tickerSymbola$type: "",
+                tickerSymbola$type: "string",
                 tickerSymbola$namespace: "myns",
-                tickerSymbolb$type: "",
+                tickerSymbolb$type: "string",
                 tickerSymbolb$namespace: "myns",
             },
             complexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             complexSequence$order: ["tickerSymbol1", "tickerSymbol2"],
             complexSequence$namespace: "myns",
             complexSequence: {
-                tickerSymbol1$type: "",
+                tickerSymbol1$type: "string",
                 tickerSymbol1$namespace: "myns",
-                tickerSymbol2$type: "",
+                tickerSymbol2$type: "string",
                 tickerSymbol2$namespace: "myns",
             },
             refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
             refrencedComplexSequence$namespace: "myns",
             refrencedComplexSequence: {
-                tickerSymbolx$type: "",
+                tickerSymbolx$type: "string",
                 tickerSymbolx$namespace: "myns",
-                tickerSymboly$type: "",
+                tickerSymboly$type: "string",
                 tickerSymboly$namespace: "myns",
             },
             refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
-            refrencedSimpleRestriction$type: "",
+            refrencedSimpleRestriction$type: "string",
             refrencedSimpleRestriction$namespace: "myns",
         };
         
@@ -201,7 +201,7 @@ describe('xsdToDefinition test', function () {
                 "xmlns:myns": "http://tempuri.org"
             },
             MyElement$namespace: "myns",
-            MyElement$type: "",
+            MyElement$type: "string",
         };
         
         var definition = schemasToDefinition(xsd_schema_simple.schema, namespaces);
@@ -249,9 +249,9 @@ describe('xsdToDefinition test', function () {
         var expected_definition = {
             MyElement: {
                 tickerSymbol1$namespace: "myns",
-                tickerSymbol1$type: "",
+                tickerSymbol1$type: "string",
                 tickerSymbol2$namespace: "myns",
-                tickerSymbol2$type: "",
+                tickerSymbol2$type: "string",
             },
             MyElement$attributes: {
                 "xmlns:myns": "http://tempuri.org",
@@ -279,7 +279,7 @@ describe("getSchemaXML", function() {
             },
             TradePrice$namespace: "xsd1",
             TradePrice: {
-                price$type: ""
+                price$type: "number"
             },
             TradePriceRequest$attributes: {
                 "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
@@ -289,7 +289,7 @@ describe("getSchemaXML", function() {
             },
             TradePriceRequest$namespace: "xsd1",
             TradePriceRequest: {
-                tickerSymbol$type: ""
+                tickerSymbol$type: "string"
             }
         };
 

@@ -1,3 +1,4 @@
+'use strict';
 
 var XMLUtils = require('../src/xmlutils.js');
 
@@ -31,7 +32,7 @@ var wsdlDefinition = {
    }
 };
 
-function wsdlToToDefinition(wsdlXml, originalNamespaces) {
+function wsdlToDefinition(wsdlXml, originalNamespaces) {
     var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
     var namespaces = _extractAndAddNamespaces(wsdlObj.definitions, originalNamespaces);
     var definition = schemasToDefinition(wsdlObj.definitions.types.schema, namespaces);
@@ -176,34 +177,49 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
         }
         
         if(type !== "object") {
-            // Resolve type namespace
-            var typeNamespace = _namespaceLookup(type, elementNamespaces);
+            for(let i= 0; i <= 3; i++) {
+                if(i === 3) {
+                    throw new Error("Type reference nested more than 3 levels");
+                }
 
-            if (typeNamespace.ns === "http://www.w3.org/2001/XMLSchema") {
-                // TODO: Save types for typescript interfaces
-                _xsdTypeLookup(typeNamespace.name);
-                result[element.$name + "$type"] = "";
-            
-            } else {
-                // Look up type if it's not a xsd native type
-                var subElement = typeLookupMap["#" + type];
-                var subXsdType = typeLookupMap["#" + type + "$xsdType"];
-                if (subElement) {
-                    if (subXsdType === "complexType" || subXsdType === "element") {
-                        subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
+                // Resolve type namespace
+                let typeNamespace = _namespaceLookup(type, elementNamespaces);
 
-                    } else if (subXsdType === "simpleType") {
-                        result[element.$name + "$type"] = "";
-
-                    } else {
-                        throw new Error("Unknown XSD type '" + subXsdType);
-                    }
+                if (typeNamespace.ns === "http://www.w3.org/2001/XMLSchema") {
+                    // TODO: Save types for typescript interfaces
+                    result[element.$name + "$type"] = _xsdTypeLookup(typeNamespace.name);
+                    break;
 
                 } else {
-                    console.log(JSON.stringify(element, null, 2));
-                    throw new Error("Could not find type '" + typeNamespace.name + "' in namespace '" + typeNamespace.ns + "'");
+                    // Look up type if it's not a xsd native type
+                    var subElement = typeLookupMap["#" + type];
+                    var subXsdType = typeLookupMap["#" + type + "$xsdType"];
+                    if (subElement) {
+                        if (subXsdType === "complexType" || subXsdType === "element") {
+                            subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
+                            break;
+
+                        } else if (subXsdType === "simpleType") {
+                            if (subElement.restriction) {
+                                type = subElement.restriction.$base;
+
+                            } else if (subElement.list) {
+                                type = subElement.list.$itemType;
+
+                            } else {
+                                throw new Error("Unknown simpleType structure");
+                            }
+
+                        } else {
+                            throw new Error("Unknown XSD type '" + subXsdType);
+                        }
+
+                    } else {
+                        console.log(JSON.stringify(element, null, 2));
+                        throw new Error("Could not find type '" + typeNamespace.name + "' in namespace '" + typeNamespace.ns + "'");
+                    }
                 }
-            }    
+            }
         } 
         
         if(subResult) {
@@ -263,8 +279,9 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
                 result["$order"].push(subElement.$name);
             }
         });
+
     }
-    
+
     return result;
 }
 
@@ -356,5 +373,5 @@ function getServices(wsdlXml) {
 
 module.exports.schemasToDefinition = schemasToDefinition;
 module.exports.getServices = getServices;
-module.exports.wsdlToToDefinition = wsdlToToDefinition;
+module.exports.wsdlToDefinition = wsdlToDefinition;
 module.exports.getSchemaXML = getSchemaXML;
