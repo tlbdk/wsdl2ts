@@ -162,21 +162,23 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
                 throw new Error("Unknown simpleType structure");
             }
 
-        } else if (element.complexType) {
+        } else if (element.complexType && (element.complexType.all || element.complexType.sequence)) {
             type = "object";
             subResult = _elementToDefinition("complexType", element.complexType, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
 
         } else if (element.hasOwnProperty("complexType")) {
             type = "object"; // Handle <xs:element name="myEmptyElement"><xs:complexType/>...
+            result[element.$name + "$type"] = "empty";
 
         } else if (Object.keys(element).length === 0) {
             type = "object"; // Handle <xs:element name="myEmptyElement"/>
+            result[element.$name + "$type"] = "any";
 
         } else {
             throw new Error("Unknown element structure");
         }
 
-        if(type !== "object") {
+        if(!['object', "any", "empty"].includes(type)) {
             for(let i= 0; i <= 3; i++) {
                 if(i === 3) {
                     throw new Error("Type reference nested more than 3 levels");
@@ -223,14 +225,19 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
         }
 
         if(subResult) {
-            result[element.$name] = {};
-            Object.keys(subResult).forEach(function (key) {
-                if(key.startsWith("$")) {
-                    result[element.$name + key] = subResult[key];
-                } else {
-                    result[element.$name][key] = subResult[key];
-                }
-            });
+            if(subResult.$type) {
+                result[element.$name + "$type"] = subResult.$type;
+
+            } else {
+                result[element.$name] = {};
+                Object.keys(subResult).forEach(function (key) {
+                    if(key.startsWith("$")) {
+                        result[element.$name + key] = subResult[key];
+                    } else {
+                        result[element.$name][key] = subResult[key];
+                    }
+                });
+            }
 
         } else {
             //result[element.$name] = "";
@@ -257,6 +264,7 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
 
             } else if(element.sequence.hasOwnProperty("any")) {
                 elements = [];
+                result["$type"] = "any";
 
             } else {
                 throw new Error("Unknown complexType sequence structure");
