@@ -31,7 +31,7 @@ function toXML (obj, definition, parentName, indentation, level) {
     if(typeof obj === undefined || obj === null) {
         // TODO: Handle null types
 
-    } else if(Array.isArray(obj)) { // TODO: Migrate to using string formatted definitions, fx. number[]
+    } else if(Array.isArray(obj)) {
         obj.forEach(function(value) {
             result += toXML(value, definition, namespace + parentName, indentation, level);
         });
@@ -135,7 +135,7 @@ function fromXML (xml, objectDefinition, inlineAttributes) {
                     }
 
                 } else {
-                    if(Array.isArray(type)) {
+                    if(Array.isArray(type)) { // TODO: Migrate to using string formatted definitions, fx. number[]
                         currentObject[name + "$attributes"] = [attributes];
 
                     } else {

@@ -315,8 +315,8 @@ function _xsdTypeLookup(type) {
     // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
     switch(type) {
         case "boolean": return "boolean";
-        case "base64Binary": return "ArrayBuffer";
-        case "hexBinary": return "ArrayBuffer";
+        case "base64Binary": return "string";
+        case "hexBinary": return "string";
         case "anyURI": return "string";
         case "language": return "string";
         case "normalizedString": return "string";

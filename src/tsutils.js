@@ -18,11 +18,11 @@ function definitionToInterface(rootName, definitions, indentation = 4) {
                 if(type.startsWith("empty")) { // TODO: Support empty by defining an empty interface
                     type = "any";
                 }
-                result.push(whitespace + key.replace(/\$type$/, '') + ": " + type + ";");
+                result.push(whitespace + key.replace(/\$type$/, '') + (rootName === name ? "?" : "") +  ": " + type + ";");
 
             } else if(key.indexOf("$") === -1 && typeof definition[key] === 'object') {
                 types.push([key, definition[key]]);
-                result.push(whitespace + key + ": " + key + ";");
+                result.push(whitespace + key + (rootName === name ? "?" : "") + ": " + key + ";");
             }
         });
         result.push("}");
