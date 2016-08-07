@@ -12,7 +12,6 @@ var wsdlXml = fs.readFileSync("/Users/trbe/git/REST2SOAPTest/rest2soap-test-kotl
 var definition = wsdlToDefinition(wsdlXml);
 
 var request = {
-    "test": "",
     "KNSIP22_TI": {
         "KKS_FASI_V22": {
             "DYNCALL_PGMNR": "",

@@ -1,7 +1,8 @@
 'use strict';
 
-var url = require('url');
-var http = require('http');
+let url = require('url');
+let http = require('http');
+let wsdlToDefinition = require('./src/wsdlutils.js').wsdlToDefinition;
 
 const soap_definition = {
     "Envelope$namespace": "soap",
@@ -20,13 +21,20 @@ const soap_definition = {
 // TODO: Kerberos authentication
 
 class SoapClient {
-
     constructor(wsdlString) {
-        this.definition = wsdlToDefinition(wsdlString);
-        console.log(JSON.stringify(this.definition, null, 2));
+        //this.definition = wsdlToDefinition(wsdlString);
+        //console.log(JSON.stringify(this.definition, null, 2));
     }
 
-    static createClient(wsdlUrl) {
+    invoke (service, port, operation) {
+
+    }
+
+    validateRequest(service, port, operation) {
+
+    }
+
+    static fromUrl(wsdlUrl) {
         return this._httpGetString(wsdlUrl)
             .then((wsdlString) => {
                 return new SoapClient(wsdlString);
@@ -69,9 +77,7 @@ class SoapClient {
         });
     }
 
-    _invoke (service, port, operation) {
 
-    }
 }
 
 module.exports.SoapClient = SoapClient;

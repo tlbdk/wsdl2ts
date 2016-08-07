@@ -32,6 +32,7 @@ var wsdlDefinition = {
    }
 };
 
+
 function wsdlToDefinition(wsdlXml, originalNamespaces) {
     var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
     var namespaces = _extractAndAddNamespaces(wsdlObj.definitions, originalNamespaces);

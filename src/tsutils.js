@@ -22,7 +22,6 @@ function definitionToInterface(rootName, definitions, indentation = 4) {
 
             } else if(key.indexOf("$") === -1 && typeof definition[key] === 'object') {
                 types.push([key, definition[key]]);
-                result.push(whitespace + key + (rootName === name ? "?" : "") + ": " + key + ";");
             }
         });
         result.push("}");
