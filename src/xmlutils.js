@@ -2,8 +2,23 @@
 
 var expat = require('node-expat');
 
+class XMLUtils {
+    constructor(definition) {
+        this._definition = definition;
+    }
+
+    toXML(obj, parentName, indentation) {
+        return _toXML(obj, this._definition, parentName, indentation);
+    }
+
+    fromXML(xml, inlineAttributes) {
+        return _fromXML(xml, this._definition, inlineAttributes);
+    }
+}
+
+
 // TODO: Sanitize XML output
-function toXML (obj, definition, parentName, indentation, level) {
+function _toXML (obj, definition, parentName, indentation, level) {
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
@@ -33,7 +48,7 @@ function toXML (obj, definition, parentName, indentation, level) {
 
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value) {
-            result += toXML(value, definition, namespace + parentName, indentation, level);
+            result += _toXML(value, definition, namespace + parentName, indentation, level);
         });
 
     } else if(typeof obj === "object") {
@@ -59,7 +74,7 @@ function toXML (obj, definition, parentName, indentation, level) {
                 // Skip definition information such as order
 
             } else {
-                subResult += toXML(obj[key], definition[parentName], key, indentation, level + 1);
+                subResult += _toXML(obj[key], definition[parentName], key, indentation, level + 1);
             }
         });
 
@@ -82,7 +97,7 @@ function toXML (obj, definition, parentName, indentation, level) {
     return result;
 }
 
-function fromXML (xml, objectDefinition, inlineAttributes) {
+function _fromXML (xml, objectDefinition, inlineAttributes) {
     var definitions = [objectDefinition || {}];
 
     var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
@@ -233,5 +248,4 @@ function fromXML (xml, objectDefinition, inlineAttributes) {
     return result;
 }
 
-module.exports.toXML = toXML;
-module.exports.fromXML = fromXML;
+module.exports = XMLUtils;

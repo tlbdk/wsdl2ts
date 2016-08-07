@@ -49,7 +49,8 @@ describe('XMLUtils#toXML/fromXML mixed inline and definition', function () {
     '</root>'
   ].join("\n");
 
-  var generated_xml = XMLUtils.toXML(sample_obj, sample_definition, "root");
+  var xmlutils = new XMLUtils(sample_definition);
+  var generated_xml = xmlutils.toXML(sample_obj, "root");
 
   it('sample should convert to XML that looks the same as sample_xml', function () {
     assert.strictEqual(sample_xml, generated_xml);
@@ -84,20 +85,22 @@ describe('XMLUtils#toXML/fromXML simple', function () {
     "</root>"
   ].join("\n");
 
+  var xmlutils = new XMLUtils(null); // TODO: Order is not guarantied with null
+
   it('sample should convert to XML that looks the same as sample_xml', function () {
-    var generated_xml = XMLUtils.toXML(sample_obj, null, "root");
+    var generated_xml = xmlutils.toXML(sample_obj, "root");
     assert.strictEqual(sample_xml, generated_xml);
   });
 
   it('should return the order of the elements and convert back to the same sample_xml', function () {
-    var generated_obj = XMLUtils.fromXML(sample_xml);
+    var generated_obj = xmlutils.fromXML(sample_xml);
     assert.deepEqual(generated_obj["root$order"], ["first", "second", "last"]);
     assert.deepEqual(generated_obj["root"]["first$order"], ["firstNested", "secondNested"]);
 
-    var generated_xml = XMLUtils.toXML(generated_obj, null, "root");
+    var generated_xml = xmlutils.toXML(generated_obj, "root");
     assert.strictEqual(sample_xml, generated_xml);
   });
-  
+
 });
 
 describe('XMLUtils#toXML/fromXML complex object', function () {
@@ -166,16 +169,18 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
       },
       "isArray$type": [],
       "myns1:overlaps$type": [], // TODO: implement
-      "myns2:overlaps$type": [] 
+      "myns2:overlaps$type": []
     }
   };
 
+  var xmlutils = new XMLUtils(sample_definition);
+
   //console.log(JSON.stringify(result, null, 2));
   it('should convert to XML and back to js again', function () {
-    var xml = XMLUtils.toXML(sample_obj, sample_definition, "Envelope");
+    var xml = xmlutils.toXML(sample_obj, "Envelope");
     //console.log(xml);
     assert.isTrue(xml.startsWith("<soap:Envelope"));
-    var obj = XMLUtils.fromXML(xml, sample_definition);
+    var obj = xmlutils.fromXML(xml);
     //console.log(JSON.stringify(obj, null, 2));
     assert.deepEqual(obj.Envelope.Body.values.value, sample_obj.Envelope.Body.values.value);
     //assert.deepEqual(obj, merge(sample_definition, sample_obj));
