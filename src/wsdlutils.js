@@ -34,14 +34,17 @@ var wsdlDefinition = {
 
 
 function wsdlToDefinition(wsdlXml, originalNamespaces) {
-    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
+    var xmlutils = new XMLUtils(wsdlDefinition);
+    var wsdlObj = xmlutils.fromXML(wsdlXml, true);
+
     var namespaces = _extractAndAddNamespaces(wsdlObj.definitions, originalNamespaces);
     var definition = schemasToDefinition(wsdlObj.definitions.types.schema, namespaces);
     return definition;
 }
 
 function getSchemaXML(wsdlXml) {
-    var wsdlObj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
+    var xmlutils = new XMLUtils(wsdlDefinition);
+    var wsdlObj = xmlutils.fromXML(wsdlXml, true);
 
     var namespaces = {};
     Object.keys(wsdlObj.definitions).forEach(function (key) {
@@ -59,7 +62,8 @@ function getSchemaXML(wsdlXml) {
         schema: wsdlObj.definitions.types.schema[0]
     };
 
-    var schemaXml = XMLUtils.toXML(schemaObj, { schema$attributes: namespaces }, "schema");
+    var xmlutils2 = new XMLUtils({ schema$attributes: namespaces });
+    var schemaXml = xmlutils2.toXML(schemaObj, "schema");
     return schemaXml;
 }
 
@@ -189,8 +193,7 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
                 let typeNamespace = _namespaceLookup(type, elementNamespaces);
 
                 if (typeNamespace.ns === "http://www.w3.org/2001/XMLSchema") {
-                    // TODO: Save types for typescript interfaces
-                    result[element.$name + "$type"] = _xsdTypeLookup(typeNamespace.name);
+                    result[element.$name + "$type"] = typeNamespace.name;
                     break;
 
                 } else {
@@ -312,38 +315,9 @@ function _namespaceLookup(name, namespaces) {
     return result;
 }
 
-function _xsdTypeLookup(type) {
-    // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
-    switch(type) {
-        case "boolean": return "boolean";
-        case "base64Binary": return "string";
-        case "hexBinary": return "string";
-        case "anyURI": return "string";
-        case "language": return "string";
-        case "normalizedString": return "string";
-        case "string": return "string";
-        case "token": return "string";
-        case "byte": return "number";
-        case "decimal": return "number";
-        case "double": return "number";
-        case "float": return "number";
-        case "int": return "number";
-        case "integer": return "number";
-        case "long": return "number";
-        case "negativeInteger": return "number";
-        case "nonNegativeInteger": return "number";
-        case "nonPositiveInteger": return "number";
-        case "short": return "number";
-        case "unsignedByte": return "number";
-        case "unsignedInt": return "number";
-        case "unsignedLong": return "number";
-        case "unsignedShort": return "number";
-        default: throw new Error("Unknown XSD type " + type);
-    }
-}
-
 function getServices(wsdlXml) {
-    var wsdlobj = XMLUtils.fromXML(wsdlXml, wsdlDefinition, true);
+    var xmlutils = new XMLUtils(wsdlDefinition);
+    var wsdlobj = xmlutils.fromXML(wsdlXml, true);
     var definitions = wsdlobj.definitions;
     var result = {};
     // TODO: Support namespaces

@@ -54,7 +54,8 @@ var request = {
 var schemaXML = getSchemaXML(wsdlXml);
 var schema = xsd.parse(schemaXML);
 
-var requestXML = XMLUtils.toXML(request, definition, "KNSIP22_TI");
+var xmlutils = new XMLUtils(definition);
+var requestXML = xmlutils.toXML(request, definition, "KNSIP22_TI");
 console.log(requestXML);
 var validationErrors = schema.validate(requestXML);
 if(validationErrors) {

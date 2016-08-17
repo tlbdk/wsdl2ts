@@ -11,9 +11,11 @@ function definitionToInterface(rootName, definitions, indentation = 4) {
         result.push("export interface " + name + " {")
         Object.keys(definition).forEach(function (key) {
             if(key.endsWith("$type")) {
-                let type = definition[key];
-                if(Array.isArray(type)) {
-                    type = type[0] + "[]";
+                let type;
+                if(Array.isArray(definition[key])) {
+                    type = _xsdTypeLookup(definition[key][0]) + "[]";
+                } else {
+                    type = _xsdTypeLookup(definition[key]);
                 }
                 if(type.startsWith("empty")) { // TODO: Support empty by defining an empty interface
                     type = "any";
@@ -22,12 +24,45 @@ function definitionToInterface(rootName, definitions, indentation = 4) {
 
             } else if(key.indexOf("$") === -1 && typeof definition[key] === 'object') {
                 types.push([key, definition[key]]);
+                result.push(whitespace + key + (rootName === name ? "?" : "") + ": " + key + ";");
             }
         });
         result.push("}");
         results.push(result.join("\n"));
     };
     return results;
+}
+
+function _xsdTypeLookup(type) {
+    // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
+    switch(type) {
+        case "boolean": return "boolean";
+        case "base64Binary": return "string";
+        case "hexBinary": return "string";
+        case "anyURI": return "string";
+        case "language": return "string";
+        case "normalizedString": return "string";
+        case "string": return "string";
+        case "token": return "string";
+        case "byte": return "number";
+        case "decimal": return "number";
+        case "double": return "number";
+        case "float": return "number";
+        case "int": return "number";
+        case "integer": return "number";
+        case "long": return "number";
+        case "negativeInteger": return "number";
+        case "nonNegativeInteger": return "number";
+        case "nonPositiveInteger": return "number";
+        case "short": return "number";
+        case "unsignedByte": return "number";
+        case "unsignedInt": return "number";
+        case "unsignedLong": return "number";
+        case "unsignedShort": return "number";
+        case "empty": return "empty";
+        case "any": return "any";
+        default: throw new Error("Unknown XSD type '" + type + "'");
+    }
 }
 
 module.exports.definitionToInterface = definitionToInterface;

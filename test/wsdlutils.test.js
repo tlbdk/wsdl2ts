@@ -288,7 +288,7 @@ describe("getSchemaXML", function() {
             },
             TradePrice$namespace: "xsd1",
             TradePrice: {
-                price$type: "number"
+                price$type: "float"
             },
             TradePriceRequest$attributes: {
                 "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
@@ -312,7 +312,8 @@ describe("getSchemaXML", function() {
         };
 
         // Validate schema against generated XML
-        var sample_xml = XMLUtils.toXML(sample_obj, definition, "TradePriceRequest");
+        var xmlutils = new XMLUtils(definition);
+        var sample_xml = xmlutils.toXML(sample_obj, "TradePriceRequest");
         var schemaXML = getSchemaXML(wsdlXml);
         var schema = xsd.parse(schemaXML);
         var validationErrors = schema.validate(sample_xml);
