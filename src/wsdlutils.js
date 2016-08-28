@@ -2,7 +2,7 @@
 
 var XMLUtils = require('../src/xmlutils.js');
 
-var wsdlDefinition = {
+const wsdlDefinition = {
    "definitions": {
        "types": {
            "schema$type": [],
@@ -32,45 +32,86 @@ var wsdlDefinition = {
    }
 };
 
+class WSDLUtils {
+    constructor(wsdlString) {
+        this.wsdlParser = new XMLUtils(wsdlDefinition);
+        this.wsdlObj = this.wsdlParser.fromXML(wsdlString, true);
+        this.rootNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions);
+        this.schemaNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, this.rootNamespaces);
+        this.definition = _schemasToDefinition(this.wsdlObj.definitions.types.schema, this.schemaNamespaces);
+    }
 
-function wsdlToDefinition(wsdlXml, originalNamespaces) {
-    var xmlutils = new XMLUtils(wsdlDefinition);
-    var wsdlObj = xmlutils.fromXML(wsdlXml, true);
+    getDefinition() {
+        return this.definition;
+    }
 
-    var namespaces = _extractAndAddNamespaces(wsdlObj.definitions, originalNamespaces);
-    var definition = schemasToDefinition(wsdlObj.definitions.types.schema, namespaces);
-    return definition;
+    getSchemaXML(index = 0) {
+        var schemaObj = {
+            schema: this.wsdlObj.definitions.types.schema[index]
+        };
+
+        // Add all names to all schema elements
+        var xmlutils2 = new XMLUtils({ schema$attributes: this.schemaNamespaces });
+        var schemaXml = xmlutils2.toXML(schemaObj, "schema");
+        return schemaXml;
+    }
+
+    getOperations() {
+
+    }
+    getEndpoints() {
+
+    }
+    validateMessage(elementName, message) {
+
+    }
 }
 
-function getSchemaXML(wsdlXml) {
+function getServices(wsdlXml) {
+    // TODO: Port to class type and get it working
     var xmlutils = new XMLUtils(wsdlDefinition);
-    var wsdlObj = xmlutils.fromXML(wsdlXml, true);
+    var wsdlobj = xmlutils.fromXML(wsdlXml, true);
+    var definitions = wsdlobj.definitions;
+    var result = {};
+    // TODO: Support namespaces
 
-    var namespaces = {};
-    Object.keys(wsdlObj.definitions).forEach(function (key) {
-        var ns = key.match(/^\$(xmlns:.+)$/);
-        if (ns) {
-            namespaces[ns[1]] = wsdlObj.definitions[key];
-        }
+    var schemas = {};
+    definitions.types.schema.forEach(function (schema) {
+        schema.element.forEach(function (element) {
+            schemas[element.$name] = element;
+        });
     });
 
-    /* Object.keys(wsdlObj.definitions.types.schema$attributes[0]).forEach(function (key) {
-        namespaces[key] = wsdlObj.definitions.types.schema$attributes[0][key];
-    }); */
+    definitions.service.forEach(function(service){
+        result[service.$name] = {};
+        service.port.forEach(function(port){
+            result[service.$name][port.$name] = {};
+            var binding = definitions.binding.filter(function(binding) { return binding.$name === port.$binding.replace(/^[^:]+:/, ""); })[0];
+            var portType = definitions.portType.filter(function(portType) { return portType.$name === binding.$type.replace(/^[^:]+:/, "") })[0];
 
-    var schemaObj = {
-        schema: wsdlObj.definitions.types.schema[0]
-    };
+            portType.operation.forEach(function(operation) {
+                var inputMessage = definitions.message.filter(function(message) { return message.$name === operation.input.$message.replace(/^[^:]+:/, "") })[0];
+                //var inputElement = _schemasToDefinition(inputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
+                // TODO: Support more than one part
+                var outputMessage = definitions.message.filter(function(message) { return message.$name === operation.output.$message.replace(/^[^:]+:/, "") })[0];
+                //var outputElement = _schemasToDefinition(outputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
 
-    var xmlutils2 = new XMLUtils({ schema$attributes: namespaces });
-    var schemaXml = xmlutils2.toXML(schemaObj, "schema");
-    return schemaXml;
+                result[service.$name][port.$name][operation.$name] = {
+                    input: inputElement,
+                    output: outputElement
+                };
+            });
+        });
+    });
+
+    return result;
 }
 
+
 // http://www.w3schools.com/xml/schema_elements_ref.asp
-function schemasToDefinition(schemas, namespaces) {
+function _schemasToDefinition(schemas, namespaces) {
     // TODO: Read namespaces from all levels
-    // Make reverse lookup posible
+    // Make reverse lookup possible
     var namespaceToAlias = {};
     Object.keys(namespaces).forEach(function(key) {
        namespaceToAlias[namespaces[key]] = key;
@@ -315,46 +356,4 @@ function _namespaceLookup(name, namespaces) {
     return result;
 }
 
-function getServices(wsdlXml) {
-    var xmlutils = new XMLUtils(wsdlDefinition);
-    var wsdlobj = xmlutils.fromXML(wsdlXml, true);
-    var definitions = wsdlobj.definitions;
-    var result = {};
-    // TODO: Support namespaces
-
-    var schemas = {};
-    definitions.types.schema.forEach(function (schema) {
-        schema.element.forEach(function (element) {
-            schemas[element.$name] = element;
-        });
-    });
-
-    definitions.service.forEach(function(service){
-        result[service.$name] = {};
-        service.port.forEach(function(port){
-            result[service.$name][port.$name] = {};
-            var binding = definitions.binding.filter(function(binding) { return binding.$name === port.$binding.replace(/^[^:]+:/, ""); })[0];
-            var portType = definitions.portType.filter(function(portType) { return portType.$name === binding.$type.replace(/^[^:]+:/, "") })[0];
-
-            portType.operation.forEach(function(operation) {
-                var inputMessage = definitions.message.filter(function(message) { return message.$name === operation.input.$message.replace(/^[^:]+:/, "") })[0];
-                //var inputElement = schemasToDefinition(inputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
-                // TODO: Support more than one part
-                var outputMessage = definitions.message.filter(function(message) { return message.$name === operation.output.$message.replace(/^[^:]+:/, "") })[0];
-                //var outputElement = schemasToDefinition(outputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
-
-                result[service.$name][port.$name][operation.$name] = {
-                    input: inputElement,
-                    output: outputElement
-                };
-            });
-        });
-    });
-
-    return result;
-}
-
-module.exports.schemasToDefinition = schemasToDefinition;
-module.exports.getServices = getServices;
-module.exports.wsdlToDefinition = wsdlToDefinition;
-module.exports.getSchemaXML = getSchemaXML;
+module.exports = WSDLUtils;

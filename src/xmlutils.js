@@ -16,7 +16,8 @@ class XMLUtils {
     }
 }
 
-
+// TODO: Handle simple type conversions, fx. int types to number
+// TODO: Handle more complex conversions: fx. Buffer/Uint8Array to XML Base64 types
 // TODO: Sanitize XML output
 function _toXML (obj, definition, parentName, indentation, level) {
     definition = definition ? definition : {};
