@@ -1,6 +1,15 @@
 'use strict';
+var CodeGenUtils = require('./codegenutils');
 
-function definitionToInterface(rootName, definitions, indentation = 4) {
+class TypeScriptCodeGen extends CodeGenUtils {
+    generateClient() {
+        // TODO: Find all operations and make then unique across service/binding
+        // TODO: Foreach operation lookup message
+    }
+}
+
+
+function _definitionToInterface(rootName, definitions, indentation = 4) {
     var types = [[rootName, definitions]];
     var whitespace = " ".repeat(indentation);
     var results = [];
@@ -65,4 +74,4 @@ function _xsdTypeLookup(type) {
     }
 }
 
-module.exports.definitionToInterface = definitionToInterface;
+module.exports.definitionToInterface = _definitionToInterface;

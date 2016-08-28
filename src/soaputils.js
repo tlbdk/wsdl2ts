@@ -56,7 +56,7 @@ class SoapClient {
 
     }
 
-    // [ { service: , port:, operation: } ]
+    // [ { service: , port:, operation: , input:, output: } ]
     getOperations() {
 
     }

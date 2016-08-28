@@ -7,8 +7,8 @@ let SoapClient = require("soapclient");
 class RemoteClient {
     constructor(url, authentication) {
         this.client = new SoapClient("sample.wsdl");
-        this.client.setEndpoint("http://...");
-        this.client.setAuthentication(authentication);
+        //this.client.setEndpoint(url); if url set
+        //this.client.setAuthentication(authentication);
     }
     execute(request, validateRequest, validateResponse) {
         var errors = validateRequest ? this.client.validateMessage("executeRequest", request) : false;
