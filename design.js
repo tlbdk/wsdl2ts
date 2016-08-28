@@ -1,54 +1,5 @@
-wsdl2client -l es6 -i sample.wsdl -n RemoteClient -o remoteclient.js
+wsdlutils -l es6client -i sample.wsdl -n RemoteClient -o remoteclient.js -s sample.js
 
-xmlutils.js:
-class XMLUtils {
-    constructor (definition) {
-
-    }
-}
-
-wsdlutils.js:
-const WSDLDefinition = ...;
-class WSDLUtils {
-    constuctor(wsdlString) {
-        this.wsdlParser = new XMLUtils(WSDLDefinition);
-        this.wsdlObj = wsdlParser.fromXML(wsdlString, true);
-    }
-    getDefinition() {
-
-    }
-    getOperations() {
-
-    }
-    getEndpoints() {
-
-    }
-    validateMessage(elementName, message) {
-
-    }
-}
-
-
-soapclient.js:
-class SoapClient {
-    constructor(wsdlFile) {
-    }
-    // { type:, username:, password }
-    setAuthentication(authentication) {
-    }
-    invoke(service, binding, operation) {
-    }
-    getSample(elementName) {
-    }
-    validateMessage(elementName, message) {
-    }
-    // [ { service: , port:, operation: } ]
-    getOperations() {
-    }
-    // [ "http://..", "http://" ]
-    getEndpoints() {
-    }
-}
 
 remoteclient.js:
 let SoapClient = require("soapclient");

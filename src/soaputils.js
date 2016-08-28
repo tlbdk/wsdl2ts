@@ -4,9 +4,9 @@
 
 let url = require('url');
 let http = require('http');
-let wsdlToDefinition = require('./src/wsdlutils.js').wsdlToDefinition;
+let WSDLUtils = require('./src/wsdlutils.js');
 
-const soap_definition = {
+const soapDefinition = {
     "Envelope$namespace": "soap",
     "Envelope$attributes": {
         "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
@@ -24,16 +24,8 @@ const soap_definition = {
 
 class SoapClient {
     constructor(wsdlString) {
-        //this.definition = wsdlToDefinition(wsdlString);
-        //console.log(JSON.stringify(this.definition, null, 2));
-    }
-
-    invoke (service, port, operation) {
-
-    }
-
-    validateRequest(service, port, operation) {
-
+        this.wsdlutils = new WSDLUtils(wsdlString);
+        this.endpoint = ""; // TODO
     }
 
     static fromUrl(wsdlUrl) {
@@ -41,6 +33,37 @@ class SoapClient {
             .then((wsdlString) => {
                 return new SoapClient(wsdlString);
             });
+    }
+
+    // { type:, username:, password }
+    setAuthentication(authentication) {
+
+    }
+
+    setEndpoint(url) {
+
+    }
+
+    invoke (service, port, operation) {
+
+    }
+
+    validateMessage(elementName, message) {
+
+    }
+
+    getSample(elementName) {
+
+    }
+
+    // [ { service: , port:, operation: } ]
+    getOperations() {
+
+    }
+
+    // [ "http://..", "http://" ]
+    getEndpoints() {
+
     }
 
     static _httpGetString(uri) {
