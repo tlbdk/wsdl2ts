@@ -4,7 +4,7 @@
 
 let url = require('url');
 let http = require('http');
-let WSDLUtils = require('./src/wsdlutils.js');
+let WSDLUtils = require('../src/wsdlutils.js');
 
 const soapDefinition = {
     "Envelope$namespace": "soap",
@@ -105,4 +105,4 @@ class SoapClient {
 
 }
 
-module.exports.SoapClient = SoapClient;
+module.exports = SoapClient;
