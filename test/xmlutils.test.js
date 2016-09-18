@@ -53,7 +53,7 @@ describe('XMLUtils#toXML/fromXML mixed inline and definition', function () {
   var generated_xml = xmlutils.toXML(sample_obj, "root");
 
   it('sample should convert to XML that looks the same as sample_xml', function () {
-    assert.strictEqual(sample_xml, generated_xml);
+    assert.strictEqual(generated_xml, sample_xml);
   });
 });
 
@@ -185,4 +185,40 @@ describe('XMLUtils#toXML/fromXML complex object', function () {
     assert.deepEqual(obj.Envelope.Body.values.value, sample_obj.Envelope.Body.values.value);
     //assert.deepEqual(obj, merge(sample_definition, sample_obj));
   });
+});
+
+
+describe('XMLUtils#toXML/fromXML simple', function () {
+    var sample_obj = {
+        "root": {
+            "first": {
+                "firstNested": "",
+                "secondNested": ""
+            },
+            "second": "",
+            "last": {
+                "stuff": "test",
+            }
+        }
+    };
+
+    var sample_xml = [
+        "<root>",
+        "  <first>",
+        "    <firstNested />",
+        "    <secondNested />",
+        "  </first>",
+        "  <second />",
+        "  <last>",
+        "    <stuff>test</stuff>",
+        "  </last>",
+        "</root>"
+    ].join("\n");
+
+    var xmlutils = new XMLUtils(null);
+
+    it('sample should convert to XML that looks the same as sample_xml', function () {
+        var generated_xml = xmlutils.toXML(sample_obj, "root", 2, true);
+        assert.strictEqual(sample_xml, generated_xml);
+    });
 });

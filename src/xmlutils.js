@@ -7,8 +7,8 @@ class XMLUtils {
         this._definition = definition;
     }
 
-    toXML(obj, parentName, indentation) {
-        return _toXML(obj, this._definition, parentName, indentation);
+    toXML(obj, parentName, indentation, optimizeEmpty) {
+        return _toXML(obj, this._definition, parentName, indentation, optimizeEmpty);
     }
 
     fromXML(xml, inlineAttributes) {
@@ -19,10 +19,11 @@ class XMLUtils {
 // TODO: Handle simple type conversions, fx. int types to number
 // TODO: Handle more complex conversions: fx. Buffer/Uint8Array to XML Base64 types
 // TODO: Sanitize XML output
-function _toXML (obj, definition, parentName, indentation, level) {
+function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level) {
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
+    optimizeEmpty = optimizeEmpty ? true : false;
 
     var result = "";
     var namespace = "";
@@ -49,7 +50,7 @@ function _toXML (obj, definition, parentName, indentation, level) {
 
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value) {
-            result += _toXML(value, definition, namespace + parentName, indentation, level);
+            result += _toXML(value, definition, namespace + parentName, indentation, optimizeEmpty, level);
         });
 
     } else if(typeof obj === "object") {
@@ -75,7 +76,7 @@ function _toXML (obj, definition, parentName, indentation, level) {
                 // Skip definition information such as order
 
             } else {
-                subResult += _toXML(obj[key], definition[parentName], key, indentation, level + 1);
+                subResult += _toXML(obj[key], definition[parentName], key, indentation, optimizeEmpty, level + 1);
             }
         });
 
@@ -92,7 +93,13 @@ function _toXML (obj, definition, parentName, indentation, level) {
         Object.getOwnPropertyNames(attributes).forEach(function(key){
             result += " " + key + '="' + attributes[key] + '"';
         });
-        result += ">" + obj + "</" + namespace + parentName + ">\n";
+
+        if(obj === "" && optimizeEmpty) {
+            result += " />\n";
+
+        } else {
+            result += ">" + obj + "</" + namespace + parentName + ">\n";
+        }
     }
 
     return result;
