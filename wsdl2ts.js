@@ -10,6 +10,8 @@
 // https://github.com/node-xmpp/ltx
 // https://github.com/polotek/libxmljs - https://gist.github.com/polotek/484083
 // TODO: Implement support for XSD validation of XML messages after generation: https://www.npmjs.com/package/libxml-xsd
+// TODO: Look into making the windows installation a bit easier: https://cylonjs.com/blog/2014/11/19/creating-multiplatform-precompiled-binaries-for-node-modules/
+
 
 var program = require('commander');
 program
