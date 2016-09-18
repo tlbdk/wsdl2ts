@@ -7,12 +7,18 @@ class XMLUtils {
         this._definition = definition;
     }
 
-    toXML(obj, parentName, indentation, optimizeEmpty) {
-        return _toXML(obj, this._definition, parentName, indentation, optimizeEmpty);
+    toXML(obj, rootName, indentation, optimizeEmpty) {
+        return _toXML(obj, this._definition, rootName, indentation, optimizeEmpty);
     }
 
     fromXML(xml, inlineAttributes) {
         return _fromXML(xml, this._definition, inlineAttributes);
+    }
+
+    generateSample(rootName) {
+        var result = {};
+        result[rootName] =_generateSample(this._definition[rootName], rootName);
+        return result;
     }
 }
 
@@ -258,6 +264,62 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
     }
 
     return result;
+}
+
+function _generateSample(definition, level = 0) {
+    let result = {};
+
+    Object.keys(definition).forEach(function (key) {
+        if(key.endsWith("$type")) {
+            let keyName = key.replace(/\$type$/, '');
+            let length = definition[keyName + "$length"] || [1, 1];
+
+            if(Array.isArray(definition[key])) {
+                let value = _xsdTypeLookup(definition[key][0], length[1]);
+                result[keyName] = new Array(definition[key][2]).fill(value);
+
+            } else {
+                result[keyName] = _xsdTypeLookup(definition[key], length[1]);
+            }
+
+        } else if(key.indexOf("$") === -1 && typeof definition[key] === 'object') {
+            result[key] = _generateSample(definition[key], key, level + 1);
+        }
+    });
+
+    return result;
+}
+
+function _xsdTypeLookup(type, length) {
+    // http://www.xml.dvint.com/docs/SchemaDataTypesQR-2.pdf
+    switch(type) {
+        case "boolean": return true;
+        case "base64Binary": return " ".repeat(length);
+        case "hexBinary": return " ".repeat(length);
+        case "anyURI": return "http://sample.com";
+        case "language": return "en";
+        case "normalizedString": return " ".repeat(length);
+        case "string": return " ".repeat(length);
+        case "token": return " ".repeat(length);
+        case "byte": return 0;
+        case "decimal": return 0.0;
+        case "double": return 0.0;
+        case "float": return 0.0;
+        case "int": return 0;
+        case "integer": return 0;
+        case "long": return 0;
+        case "negativeInteger": return -1;
+        case "nonNegativeInteger": return 1;
+        case "nonPositiveInteger": return -1;
+        case "short": return 0;
+        case "unsignedByte": return 0;
+        case "unsignedInt": return 0;
+        case "unsignedLong": return 0;
+        case "unsignedShort": return 0;
+        case "empty": return "";
+        case "any": return {};
+        default: throw new Error("Unknown XSD type '" + type + "'");
+    }
 }
 
 module.exports = XMLUtils;

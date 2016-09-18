@@ -222,3 +222,59 @@ describe('XMLUtils#toXML/fromXML simple', function () {
         assert.strictEqual(sample_xml, generated_xml);
     });
 });
+
+describe('Test sample generation', function () {
+    it('Simple', function () {
+        var definition = {
+            complexAll$attributes: {"xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema"},
+            complexAll$namespace: "myns",
+            complexAll: {
+                tickerSymbola$type: "string",
+                tickerSymbola$namespace: "myns",
+                tickerSymbolb$type: "string",
+                tickerSymbolb$namespace: "myns",
+            },
+        };
+
+        var expected = {
+            complexAll: {
+                tickerSymbola: " ",
+                tickerSymbolb: " "
+            }
+        };
+
+        var xmlutils = new XMLUtils(definition);
+        var sample = xmlutils.generateSample("complexAll");
+        assert.deepEqual(sample, expected);
+    });
+
+    it('Length and Array', function () {
+        var definition = {
+            complexAllLength$attributes: {
+                "xmlns:myns": "http://tempuri.org",
+                "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+            },
+            complexAllLength$namespace: "myns",
+            complexAllLength: {
+                tickerSymbola$type: "string",
+                tickerSymbola$length: [10, 10],
+                tickerSymbola$namespace: "myns",
+                tickerSymbolb$type: ["string", 2, 2],
+                tickerSymbolb$length: [1, 1],
+                tickerSymbolb$namespace: "myns",
+            }
+        };
+
+        var expected = {
+            complexAllLength: {
+                tickerSymbola: "          ",
+                tickerSymbolb: [" ", " "]
+            }
+        };
+
+        var xmlutils = new XMLUtils(definition);
+        var sample = xmlutils.generateSample("complexAllLength");
+        assert.deepEqual(sample, expected);
+    });
+});
+

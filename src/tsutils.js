@@ -75,3 +75,5 @@ function _xsdTypeLookup(type) {
 }
 
 module.exports.definitionToInterface = _definitionToInterface;
+
+
