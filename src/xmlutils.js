@@ -117,6 +117,8 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
         if(ns.length > 1) {
             name = ns[1];
             ns = ns[0];
+        } else {
+            ns = undefined;
         }
 
         var definition = definitions[definitions.length - 1];
@@ -223,6 +225,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
                     currentObject[name][currentObject[name].length -1] = currentValue;
 
                 } else {
+                    currentObject[name][currentObject[name].length -1].$ = currentValue;
                     // TODO: Save "<tag>text<subtag>" type text
                 }
 
@@ -231,6 +234,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
                     currentObject[name] = currentValue; // TODO: Handle inline attributes
 
                 } else {
+                    currentObject[name].$ = currentValue;
                     // TODO: Save "<tag>text<subtag>" type text
                 }
             }
