@@ -15,3 +15,5 @@ class CodeGenUtils {
         throw new Error("Not implemented");
     }
 }
+
+module.exports.definitionToInterface = CodeGenUtils;
