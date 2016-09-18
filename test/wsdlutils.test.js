@@ -160,18 +160,18 @@ describe('xsdToDefinition test', function () {
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
             "<definitions xmlns:myns=\"http://tempuri.org\">\n" +
             "  <types>\n" +
-            "    <schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\" targetNamespace=\"http://tempuri.org\">\n" +
-            "      <element name=\"MyElement\" type=\"myns:TradePriceRequest\">\n" +
-            "      </element>\n" +
-            "      <complexType name=\"TradePriceRequest\">\n" +
-            "        <sequence>\n" +
-            "          <element name=\"tickerSymbol1\" type=\"xs:string\">\n" +
-            "          </element>\n" +
-            "          <element name=\"tickerSymbol2\" type=\"xs:string\">\n" +
-            "          </element>\n" +
-            "        </sequence>\n" +
-            "      </complexType>\n" +
-            "    </schema>\n" +
+            "    <xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" elementFormDefault=\"qualified\" targetNamespace=\"http://tempuri.org\">\n" +
+            "      <xs:element name=\"MyElement\" type=\"myns:TradePriceRequest\">\n" +
+            "      </xs:element>\n" +
+            "      <xs:complexType name=\"TradePriceRequest\">\n" +
+            "        <xs:sequence>\n" +
+            "          <xs:element name=\"tickerSymbol1\" type=\"xs:string\">\n" +
+            "          </xs:element>\n" +
+            "          <xs:element name=\"tickerSymbol2\" type=\"xs:string\">\n" +
+            "          </xs:element>\n" +
+            "        </xs:sequence>\n" +
+            "      </xs:complexType>\n" +
+            "    </xs:schema>\n" +
             "  </types>\n" +
             "</definitions>";
 
