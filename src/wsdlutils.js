@@ -191,6 +191,8 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
     var result = {};
     var subResult;
     var type;
+    var maxLength = 0;
+    var minLength = 0;
 
     if (xsdType === "element") {
         // Extract type
@@ -200,6 +202,19 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
         } else if (element.simpleType) {
             if (element.simpleType.restriction) {
                 type = element.simpleType.restriction.$base;
+
+                if(element.simpleType.restriction.length) {
+                    maxLength = element.simpleType.restriction.length.$value;
+                    minLength = element.simpleType.restriction.length.$value;
+
+                } else {
+                    if(element.simpleType.restriction.maxLength) {
+                        maxLength = element.simpleType.restriction.maxLength.$value;
+                    }
+                    if(element.simpleType.restriction.minLength) {
+                        minLength = element.simpleType.restriction.minLength.$value;
+                    }
+                }
 
             } else if (element.simpleType.list) {
                 type = element.simpleType.list.$itemType;
@@ -250,6 +265,19 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
                             if (subElement.restriction) {
                                 type = subElement.restriction.$base;
 
+                                if(subElement.restriction.length) {
+                                    maxLength = parseInt(subElement.restriction.length.$value);
+                                    minLength = maxLength;
+
+                                } else {
+                                    if(subElement.restriction.maxLength) {
+                                        maxLength = parseInt(subElement.restriction.maxLength.$value);
+                                    }
+                                    if(subElement.restriction.minLength) {
+                                        minLength = parseInt(subElement.restriction.minLength.$value);
+                                    }
+                                }
+
                             } else if (subElement.list) {
                                 type = subElement.list.$itemType;
 
@@ -293,9 +321,16 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
             result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
         }
 
+        var maxOccurs = parseInt(element.$maxOccurs ===  "unbounded" ? Number.MAX_VALUE : (element.$maxOccurs || 0));
+        var minOccurs = parseInt(element.$minOccurs || 0);
+
         // Check if this type is an array
-        if ((element.$maxOccurs ===  "unbounded" ? Number.MAX_VALUE : (element.$maxOccurs || 0)) > 1) {
-            result[element.$name + "$type"] = [result[element.$name + "$type"]];
+        if (maxOccurs > 1) {
+            result[element.$name + "$type"] = [result[element.$name + "$type"], minOccurs, maxOccurs];
+        }
+
+        if(maxLength > 0) {
+            result[element.$name + "$length"] = [minLength, maxLength];
         }
 
     } else if(xsdType === "complexType") {
