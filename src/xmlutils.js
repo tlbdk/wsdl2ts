@@ -7,8 +7,8 @@ class XMLUtils {
         this._definition = definition;
     }
 
-    toXML(obj, rootName, indentation, optimizeEmpty) {
-        return _toXML(obj, this._definition, rootName, indentation, optimizeEmpty);
+    toXML(obj, rootName, indentation, optimizeEmpty, convertTypes = true) {
+        return _toXML(obj, this._definition, rootName, indentation, optimizeEmpty, convertTypes);
     }
 
     fromXML(xml, inlineAttributes) {
@@ -25,7 +25,7 @@ class XMLUtils {
 // TODO: Handle simple type conversions, fx. int types to number
 // TODO: Handle more complex conversions: fx. Buffer/Uint8Array to XML Base64 types
 // TODO: Sanitize XML output
-function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level) {
+function _toXML (obj, definition, parentName, indentation, optimizeEmpty, convertTypes, level) {
     definition = definition ? definition : {};
     level = level ? level : 0;
     indentation = indentation ? indentation : 2;
@@ -43,6 +43,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level)
     }
     var attributes = definition[parentName + "$attributes"] || {};
     var order = obj[parentName + "$order"] || definition[parentName + "$order"];
+    var type = obj[parentName + "$type"] || definition[parentName + "$type"];
 
     if(level === 0) {
         // Go into first level
@@ -56,7 +57,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level)
 
     } else if(Array.isArray(obj)) {
         obj.forEach(function(value) {
-            result += _toXML(value, definition, namespace + parentName, indentation, optimizeEmpty, level);
+            result += _toXML(value, definition, namespace + parentName, indentation, optimizeEmpty, convertTypes, level);
         });
 
     } else if(typeof obj === "object") {
@@ -82,7 +83,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level)
                 // Skip definition information such as order
 
             } else {
-                subResult += _toXML(obj[key], definition[parentName], key, indentation, optimizeEmpty, level + 1);
+                subResult += _toXML(obj[key], definition[parentName], key, indentation, optimizeEmpty, convertTypes, level + 1);
             }
         });
 
@@ -104,6 +105,14 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, level)
             result += " />\n";
 
         } else {
+            if(convertTypes) {
+                if(type === "base64Binary") {
+                    obj = Buffer.from(obj).toString('base64');
+
+                } else if(type === "hexBinary") {
+                    obj = Buffer.from(obj).toString('hex');
+                }
+            }
             result += ">" + obj + "</" + namespace + parentName + ">\n";
         }
     }

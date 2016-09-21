@@ -6,55 +6,54 @@ var assert = chai.assert;
 var XMLUtils = require('../src/xmlutils');
 
 describe('XMLUtils#toXML/fromXML mixed inline and definition', function () {
-  var sample_definition = {
-    "root$attributes": { "xmlns:myns": "http://tempuri.org" },
-    "root": {
-      "list$namespace": "myns",
-      "list$attributes": { "outer": "hello" },
-      "list": {
-        "item$namespace": "myns"
-      }
-    }
-  };
+    it('sample should convert to XML that looks the same as sample_xml', function () {
+        var sample_definition = {
+            "root$attributes": {"xmlns:myns": "http://tempuri.org"},
+            "root": {
+                "list$namespace": "myns",
+                "list$attributes": {"outer": "hello"},
+                "list": {
+                    "item$namespace": "myns"
+                }
+            }
+        };
 
-  var sample_obj = {
-    "root": {
-      "$xmlns:xs": "http://www.w3.org/2001/XMLSchema", // Define a new namespace inline
-      "list": {
-        "xs:item": [
-          {
-            "$inline": "first",
-            "$": "value1"
-          },
-          {
-            "namespace$": "myns",
-            "$inline": "second",
-            "$": "value2"
-          },
-          "value3"
-        ],
-        "item": "after"
-      }
-    }
-  };
+        var sample_obj = {
+            "root": {
+                "$xmlns:xs": "http://www.w3.org/2001/XMLSchema", // Define a new namespace inline
+                "list": {
+                    "xs:item": [
+                        {
+                            "$inline": "first",
+                            "$": "value1"
+                        },
+                        {
+                            "namespace$": "myns",
+                            "$inline": "second",
+                            "$": "value2"
+                        },
+                        "value3"
+                    ],
+                    "item": "after"
+                }
+            }
+        };
 
-  var sample_xml = [
-    '<root xmlns:myns="http://tempuri.org" xmlns:xs="http://www.w3.org/2001/XMLSchema">',
-    '  <myns:list outer="hello">',
-    '    <xs:item inline="first">value1</xs:item>',
-    '    <myns:item inline="second">value2</myns:item>',
-    '    <xs:item>value3</xs:item>',
-    '    <myns:item>after</myns:item>',
-    '  </myns:list>',
-    '</root>'
-  ].join("\n");
+        var sample_xml = [
+            '<root xmlns:myns="http://tempuri.org" xmlns:xs="http://www.w3.org/2001/XMLSchema">',
+            '  <myns:list outer="hello">',
+            '    <xs:item inline="first">value1</xs:item>',
+            '    <myns:item inline="second">value2</myns:item>',
+            '    <xs:item>value3</xs:item>',
+            '    <myns:item>after</myns:item>',
+            '  </myns:list>',
+            '</root>'
+        ].join("\n");
 
-  var xmlutils = new XMLUtils(sample_definition);
-  var generated_xml = xmlutils.toXML(sample_obj, "root");
-
-  it('sample should convert to XML that looks the same as sample_xml', function () {
-    assert.strictEqual(generated_xml, sample_xml);
-  });
+        var xmlutils = new XMLUtils(sample_definition);
+        var generated_xml = xmlutils.toXML(sample_obj, "root");
+        assert.strictEqual(generated_xml, sample_xml);
+    });
 });
 
 
@@ -223,7 +222,40 @@ describe('XMLUtils#toXML/fromXML simple', function () {
     });
 });
 
-describe('Test sample generation', function () {
+describe('Binary encoding', function () {
+    it('Base64/Hex Encode', function () {
+        var definition = {
+            complexAll: {
+                tickerSymbola$type: "base64Binary",
+                tickerSymbolb$type: "hexBinary",
+            },
+        };
+
+        var sample = {
+            complexAll: {
+                tickerSymbola: "ÆØÅ",
+                tickerSymbolb: "ÅØÆ"
+            }
+        };
+
+        var expected = [
+            "<complexAll>",
+            "  <tickerSymbola>w4bDmMOF</tickerSymbola>",
+            "  <tickerSymbolb>c385c398c386</tickerSymbolb>",
+            "</complexAll>",
+        ].join("\n");
+
+        var xmlutils = new XMLUtils(definition);
+        var generatedXml = xmlutils.toXML(sample, "complexAll");
+        assert.strictEqual(generatedXml, expected);
+
+    });
+    it('Base64/Hex Decode', function () {
+
+    });
+});
+
+describe('Sample generation', function () {
     it('Simple', function () {
         var definition = {
             complexAll$attributes: {"xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema"},
