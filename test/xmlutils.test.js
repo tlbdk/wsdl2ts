@@ -306,6 +306,56 @@ describe('Types', function () {
     });
 });
 
+describe('Escaping', function () {
+    var obj = {
+        complexAll: {
+            nestedXml: "<xml>...</xml>",
+            charsXml: "%<>\"'",
+            charsRaw: "&gt;&lt;&amp;",
+            cdata: "<![CDATA['><]]>",
+            comment: "<!-- my comment -->",
+        }
+    };
+    var objParsed = {
+        complexAll: {
+            nestedXml: "<xml>...</xml>",
+            charsXml: "%<>\"'",
+            charsRaw: "><&",
+            cdata: "'><",
+            comment: '',
+        },
+        complexAll$order: [
+            "nestedXml",
+            "charsXml",
+            "charsRaw",
+            "cdata",
+            "comment"
+        ]
+    };
+
+    var xml = [
+        "<complexAll>",
+        "  <nestedXml>&lt;xml&gt;...&lt;/xml&gt;</nestedXml>",
+        "  <charsXml>%&lt;&gt;&quot;&apos;</charsXml>",
+        "  <charsRaw>&gt;&lt;&amp;</charsRaw>",
+        "  <cdata><![CDATA['><]]></cdata>",
+        "  <comment><!-- my comment --></comment>",
+        "</complexAll>",
+    ].join("\n");
+
+    it('to', function () {
+        var xmlutils = new XMLUtils();
+        var generatedXml = xmlutils.toXML(obj, "complexAll");
+        assert.strictEqual(generatedXml, xml);
+    });
+
+    it('from', function () {
+        var xmlutils = new XMLUtils();
+        var generatedObj = xmlutils.fromXML(xml, "complexAll");
+        assert.deepEqual(generatedObj, objParsed);
+    });
+});
+
 describe('Sample generation', function () {
     it('Simple', function () {
         var definition = {

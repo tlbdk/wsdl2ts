@@ -22,9 +22,6 @@ class XMLUtils {
     }
 }
 
-// TODO: Handle simple type conversions, fx. int types to number
-// TODO: Handle more complex conversions: fx. Buffer/Uint8Array to XML Base64 types
-// TODO: Sanitize XML output
 function _toXML (obj, definition, parentName, indentation, optimizeEmpty, convertTypes, level) {
     definition = definition ? definition : {};
     level = level ? level : 0;
@@ -114,11 +111,29 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
             result += " />\n";
 
         } else {
-            result += ">" + obj + "</" + namespace + parentName + ">\n";
+            result += ">" + escapeValue(obj) + "</" + namespace + parentName + ">\n";
         }
     }
 
     return result;
+}
+
+function escapeValue(value) {
+    if(typeof value === 'string'){
+        return value.replace(/((?:&(?!(?:apos|quot|[gl]t|amp);))|(?:<!--.+?-->)|(?:<!\[CDATA\[.+?]]>)|[<>'"])/g, function(match, p1) {
+            switch(p1) {
+                case '>': return '&gt;';
+                case '<': return '&lt;';
+                case "'": return '&apos;';
+                case '"': return '&quot;';
+                case '&': return '&amp;';
+                default: return p1;
+            }
+        });
+
+    } else {
+        return value;
+    }
 }
 
 function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
