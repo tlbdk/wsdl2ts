@@ -97,7 +97,7 @@ describe('XMLUtils#toXML/fromXML simple', function () {
     assert.deepEqual(generated_obj["root"]["first$order"], ["firstNested", "secondNested"]);
 
     var generated_xml = xmlutils.toXML(generated_obj, "root");
-    assert.strictEqual(sample_xml, generated_xml);
+    assert.strictEqual(generated_xml, sample_xml);
   });
 
 });
@@ -227,7 +227,7 @@ describe('Binary encoding', function () {
         complexAll: {
             tickerSymbola$type: "base64Binary",
             tickerSymbolb$type: "hexBinary",
-        },
+        }
     };
 
     var obj = {
@@ -256,6 +256,52 @@ describe('Binary encoding', function () {
     it('Base64/Hex Decode', function () {
         var xmlutils = new XMLUtils(definition);
         var generatedObj = xmlutils.fromXML(xml);
+        assert.deepEqual(generatedObj, obj);
+    });
+});
+
+describe('Types', function () {
+    var definition = {
+        complexAll: {
+            boolean1$type: "boolean",
+            boolean2$type: "boolean",
+            float$type: "float",
+            int$type: "int",
+        },
+    };
+    var obj = {
+        complexAll: {
+            boolean1: true,
+            boolean2: false,
+            float: 1.1,
+            int: 1,
+        },
+        complexAll$order: [
+            "boolean1",
+            "boolean2",
+            "float",
+            "int"
+        ]
+    };
+
+    var xml = [
+        "<complexAll>",
+        "  <boolean1>true</boolean1>",
+        "  <boolean2>false</boolean2>",
+        "  <float>1.1</float>",
+        "  <int>1</int>",
+        "</complexAll>",
+    ].join("\n");
+
+    it('to', function () {
+        var xmlutils = new XMLUtils(definition);
+        var generatedXml = xmlutils.toXML(obj, "complexAll");
+        assert.strictEqual(generatedXml, xml);
+    });
+
+    it('from', function () {
+        var xmlutils = new XMLUtils(definition);
+        var generatedObj = xmlutils.fromXML(xml, "complexAll");
         assert.deepEqual(generatedObj, obj);
     });
 });

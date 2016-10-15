@@ -60,7 +60,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
             obj = Buffer.from(obj).toString('hex');
         }
     }
-    
+
     if(typeof obj === undefined || obj === null) {
         // TODO: Handle null types
 
@@ -256,7 +256,18 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
             } else if(typeof currentObject[name] === "object") {
                 if(Object.getOwnPropertyNames(currentObject[name]).length === 0) { // Move to utility function
                     if(convertTypes) {
-                        if(currentType === "base64Binary") {
+                        if(currentType === "boolean") {
+                            currentObject[name] = currentValue === 'true';
+
+                        } else if(['decimal', 'double', 'float'].indexOf(currentType) > -1) {
+                            currentObject[name] = parseFloat(currentValue);
+
+                        } else if(['byte', 'int', 'integer', 'long', 'negativeInteger', 'nonNegativeInteger',
+                                'nonPositiveInteger', 'short', 'unsignedByte', 'unsignedInt', 'unsignedLong',
+                                'unsignedShort'].indexOf(currentType) > -1) {
+                            currentObject[name] = parseInt(currentValue);
+
+                        } else if(currentType === "base64Binary") {
                             currentObject[name] = Buffer.from(currentValue, 'base64');
 
                         } else if(currentType === "hexBinary") {
