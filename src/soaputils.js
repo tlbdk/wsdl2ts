@@ -52,9 +52,7 @@ class SoapClient {
 
     }
 
-    getSample(elementName) {
 
-    }
 
     // [ { service: , port:, operation: , input:, output: } ]
     getOperations() {

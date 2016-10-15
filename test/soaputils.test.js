@@ -4,12 +4,18 @@
 
 //var assert = require('assert');
 var chai = require('chai');
+var fs = require('fs');
 var assert = chai.assert;
-var SoapClient = require('../src/soaputils.js').SoapClient;
+var SoapClient = require('../src/soaputils.js');
 
 describe('SOAPClient', function () {
+    var sampleWSDL = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl");
+
     it('Create new client and class service', function (done) {
-        var client = new SoapClient("");
+        var client = new SoapClient(sampleWSDL);
+        var requestSample = client.getSampleRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
+
+
         var request = {};
         var errors = client.validate("TradePriceRequest", request);
         if(errors) {

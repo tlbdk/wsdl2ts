@@ -39,6 +39,8 @@ class WSDLUtils {
         this.rootNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions);
         this.schemaNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, this.rootNamespaces);
         this.definition = _schemasToDefinition(this.wsdlObj.definitions.types.schema, this.schemaNamespaces);
+        this.services = _extractServices(this.wsdlObj.definitions);
+        this.soapParser = new XMLUtils(this.definition);
     }
 
     getDefinition() {
@@ -56,6 +58,22 @@ class WSDLUtils {
         return schemaXml;
     }
 
+    getSampleRequest(service, binding, operation) {
+        let typeName = this.services[service][binding][operation].input.replace(/^[^:]+:/, "");
+        return this.soapParser.generateSample(typeName);
+    }
+
+    getSampleResponse(service, binding, operation) {
+        let typeName = this.services[service][binding][operation].output.replace(/^[^:]+:/, "");
+        return this.soapParser.generateSample(typeName);
+    }
+
+
+    // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
+    getServices() {
+        return this.services;
+    }
+
     getOperations() {
 
     }
@@ -67,43 +85,39 @@ class WSDLUtils {
     }
 }
 
-function getServices(wsdlXml) {
-    // TODO: Port to class type and get it working
-    var xmlutils = new XMLUtils(wsdlDefinition);
-    var wsdlobj = xmlutils.fromXML(wsdlXml, true);
-    var definitions = wsdlobj.definitions;
+function _extractServices(wsdlRoot) {
     var result = {};
-    // TODO: Support namespaces
-
-    var schemas = {};
-    definitions.types.schema.forEach(function (schema) {
-        schema.element.forEach(function (element) {
-            schemas[element.$name] = element;
-        });
-    });
-
-    definitions.service.forEach(function(service){
+    if(!wsdlRoot.service) return;
+    wsdlRoot.service.forEach(function(service){
         result[service.$name] = {};
         service.port.forEach(function(port){
-            result[service.$name][port.$name] = {};
-            var binding = definitions.binding.filter(function(binding) { return binding.$name === port.$binding.replace(/^[^:]+:/, ""); })[0];
-            var portType = definitions.portType.filter(function(portType) { return portType.$name === binding.$type.replace(/^[^:]+:/, "") })[0];
+            var bindingName = port.$binding.replace(/^[^:]+:/, ""); // Remove namespace
+            if(result[service.$name][bindingName]) return; // Skip if we already have this binding
 
+            var binding = wsdlRoot.binding
+                .filter(function(binding) { return binding.$name === bindingName;})[0];
+            var portTypeName = binding.$type.replace(/^[^:]+:/, ""); // Remove namespace
+            var portType = wsdlRoot.portType
+                .filter(function(portType) { return portType.$name === portTypeName; })[0];
+
+            result[service.$name][bindingName] = {};
             portType.operation.forEach(function(operation) {
-                var inputMessage = definitions.message.filter(function(message) { return message.$name === operation.input.$message.replace(/^[^:]+:/, "") })[0];
-                //var inputElement = _schemasToDefinition(inputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
-                // TODO: Support more than one part
-                var outputMessage = definitions.message.filter(function(message) { return message.$name === operation.output.$message.replace(/^[^:]+:/, "") })[0];
-                //var outputElement = _schemasToDefinition(outputMessage.part[0].$element.replace(/^[^:]+:/, ""), )
+                result[service.$name][bindingName][operation.$name] = {};
 
-                result[service.$name][port.$name][operation.$name] = {
-                    input: inputElement,
-                    output: outputElement
-                };
+                var inputMessageName = operation.input.$message.replace(/^[^:]+:/, ""); // Remove namespace
+                var inputMessage = wsdlRoot.message.filter(function(message) {
+                    return message.$name === inputMessageName;
+                })[0];
+                result[service.$name][bindingName][operation.$name]['input'] = inputMessage.part[0].$element;
+
+                var outputMessageName = operation.input.$message.replace(/^[^:]+:/, ""); // Remove namespace
+                var outputMessage = wsdlRoot.message.filter(function(message) {
+                    return message.$name === outputMessageName;
+                })[0];
+                result[service.$name][bindingName][operation.$name]['output'] = outputMessage.part[0].$element;;
             });
         });
     });
-
     return result;
 }
 

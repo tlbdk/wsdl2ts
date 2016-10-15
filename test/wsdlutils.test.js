@@ -243,6 +243,37 @@ describe("getSchemaXML", function() {
     });
 });
 
+describe("sampleRequestResponse", function() {
+    var wsdl_sample = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
+
+    it("getServices", function () {
+        var expectedDefinition = {
+            StockQuoteService: {
+                StockQuoteBinding: {
+                    GetLastTradePrice: {
+                        input: "xsd1:TradePriceRequest",
+                        output: "xsd1:TradePriceRequest"
+                    }
+                }
+            }
+        };
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+        var definition = wsdlutils.getServices();
+        assert.deepEqual(definition, expectedDefinition);
+    });
+
+    it("getSampleRequest", function () {
+        var expectedDefinition = {
+            TradePriceRequest: {
+                tickerSymbol: " "
+            }
+        };
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+        var definition = wsdlutils.getSampleRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
+        assert.deepEqual(definition, expectedDefinition);
+    });
+});
+
 
 
 
