@@ -223,35 +223,40 @@ describe('XMLUtils#toXML/fromXML simple', function () {
 });
 
 describe('Binary encoding', function () {
+    var definition = {
+        complexAll: {
+            tickerSymbola$type: "base64Binary",
+            tickerSymbolb$type: "hexBinary",
+        },
+    };
+
+    var obj = {
+        complexAll: {
+            tickerSymbola: Buffer.from("ÆØÅ"),
+            tickerSymbolb: Buffer.from("ÅØÆ")
+        },
+        complexAll$order: [
+            "tickerSymbola",
+            "tickerSymbolb"
+        ]
+    };
+
+    var xml = [
+        "<complexAll>",
+        "  <tickerSymbola>w4bDmMOF</tickerSymbola>",
+        "  <tickerSymbolb>c385c398c386</tickerSymbolb>",
+        "</complexAll>",
+    ].join("\n");
+
     it('Base64/Hex Encode', function () {
-        var definition = {
-            complexAll: {
-                tickerSymbola$type: "base64Binary",
-                tickerSymbolb$type: "hexBinary",
-            },
-        };
-
-        var sample = {
-            complexAll: {
-                tickerSymbola: "ÆØÅ",
-                tickerSymbolb: "ÅØÆ"
-            }
-        };
-
-        var expected = [
-            "<complexAll>",
-            "  <tickerSymbola>w4bDmMOF</tickerSymbola>",
-            "  <tickerSymbolb>c385c398c386</tickerSymbolb>",
-            "</complexAll>",
-        ].join("\n");
-
         var xmlutils = new XMLUtils(definition);
-        var generatedXml = xmlutils.toXML(sample, "complexAll");
-        assert.strictEqual(generatedXml, expected);
-
+        var generatedXml = xmlutils.toXML(obj, "complexAll");
+        assert.strictEqual(generatedXml, xml);
     });
     it('Base64/Hex Decode', function () {
-
+        var xmlutils = new XMLUtils(definition);
+        var generatedObj = xmlutils.fromXML(xml);
+        assert.deepEqual(generatedObj, obj);
     });
 });
 

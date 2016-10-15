@@ -11,8 +11,8 @@ class XMLUtils {
         return _toXML(obj, this._definition, rootName, indentation, optimizeEmpty, convertTypes);
     }
 
-    fromXML(xml, inlineAttributes) {
-        return _fromXML(xml, this._definition, inlineAttributes);
+    fromXML(xml, inlineAttributes, convertTypes = true) {
+        return _fromXML(xml, this._definition, inlineAttributes, convertTypes);
     }
 
     generateSample(rootName) {
@@ -52,6 +52,15 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
 
     var whitespace = " ".repeat(level * indentation);
 
+    if(convertTypes && obj !== undefined && obj !== null) {
+        if(type === "base64Binary") {
+            obj = Buffer.from(obj).toString('base64');
+
+        } else if(type === "hexBinary") {
+            obj = Buffer.from(obj).toString('hex');
+        }
+    }
+    
     if(typeof obj === undefined || obj === null) {
         // TODO: Handle null types
 
@@ -105,14 +114,6 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
             result += " />\n";
 
         } else {
-            if(convertTypes) {
-                if(type === "base64Binary") {
-                    obj = Buffer.from(obj).toString('base64');
-
-                } else if(type === "hexBinary") {
-                    obj = Buffer.from(obj).toString('hex');
-                }
-            }
             result += ">" + obj + "</" + namespace + parentName + ">\n";
         }
     }
@@ -120,13 +121,14 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
     return result;
 }
 
-function _fromXML (xml, objectDefinition, inlineAttributes) {
+function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
     var definitions = [objectDefinition || {}];
 
-    var parser = new expat.Parser('UTF-8'); // TODO: move to contructur
+    var parser = new expat.Parser('UTF-8');
     var result = {};
     var currentValue = "";
     var currentObject = result;
+    var currentType = "";
     var objects = [];
     var names = [];
 
@@ -144,7 +146,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
         }
 
         var definition = definitions[definitions.length - 1];
-        var type = definition[name + "$type"];
+        currentType = definition[name + "$type"];
         var nextObject = {};
         currentValue = ""; // TODO: Create $t value on object if this has data
 
@@ -175,7 +177,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
                     }
 
                 } else {
-                    if(Array.isArray(type)) { // TODO: Migrate to using string formatted definitions, fx. number[]
+                    if(Array.isArray(currentType)) { // TODO: Migrate to using string formatted definitions, fx. number[]
                         currentObject[name + "$attributes"] = [attributes];
 
                     } else {
@@ -197,7 +199,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
 
         } else {
             // Check definition to see if we have a type defined
-            if(Array.isArray(type)) {
+            if(Array.isArray(currentType)) {
                 currentObject[name] = [nextObject];
 
             } else {
@@ -253,9 +255,22 @@ function _fromXML (xml, objectDefinition, inlineAttributes) {
 
             } else if(typeof currentObject[name] === "object") {
                 if(Object.getOwnPropertyNames(currentObject[name]).length === 0) { // Move to utility function
-                    currentObject[name] = currentValue; // TODO: Handle inline attributes
+                    if(convertTypes) {
+                        if(currentType === "base64Binary") {
+                            currentObject[name] = Buffer.from(currentValue, 'base64');
 
-                } else {
+                        } else if(currentType === "hexBinary") {
+                            currentObject[name] = Buffer.from(currentValue, 'hex');
+
+                        } else {
+                            currentObject[name] = currentValue;
+                        }
+
+                    } else {
+                        currentObject[name] = currentValue; // TODO: Handle inline attributes
+                    }
+
+                } else if(currentValue != '') {
                     currentObject[name].$ = currentValue;
                     // TODO: Save "<tag>text<subtag>" type text
                 }
