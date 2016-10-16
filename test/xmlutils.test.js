@@ -322,7 +322,7 @@ describe('Escaping', function () {
             charsXml: "%<>\"'",
             charsRaw: "><&",
             cdata: "'><",
-            comment: '',
+            comment: '<!-- my comment -->',
         },
         complexAll$order: [
             "nestedXml",
@@ -339,7 +339,7 @@ describe('Escaping', function () {
         "  <charsXml>%&lt;&gt;&quot;&apos;</charsXml>",
         "  <charsRaw>&gt;&lt;&amp;</charsRaw>",
         "  <cdata><![CDATA['><]]></cdata>",
-        "  <comment><!-- my comment --></comment>",
+        "  <comment>&lt;!-- my comment --&gt;</comment>",
         "</complexAll>",
     ].join("\n");
 
