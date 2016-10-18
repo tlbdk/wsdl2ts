@@ -14,10 +14,7 @@ describe('SOAPClient', function () {
     it('Create new client and class service', function (done) {
         var client = new SoapClient(sampleWSDL);
         var requestSample = client.getSampleRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
-
-
-        var request = {};
-        var errors = client.validate("TradePriceRequest", request);
+        var errors = client.validateMessage(requestSample);
         if(errors) {
             throw new Error("Failed to validate request");
         }

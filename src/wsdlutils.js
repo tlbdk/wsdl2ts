@@ -1,6 +1,7 @@
 'use strict';
 
 var XMLUtils = require('../src/xmlutils.js');
+var xsd = require('libxml-xsd');
 
 const wsdlDefinition = {
    "definitions": {
@@ -33,29 +34,26 @@ const wsdlDefinition = {
 };
 
 class WSDLUtils {
-    constructor(wsdlString) {
+    constructor(wsdlString, validatedXsd = true) {
         this.wsdlParser = new XMLUtils(wsdlDefinition);
         this.wsdlObj = this.wsdlParser.fromXML(wsdlString, true);
         this.rootNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions);
-        this.schemaNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, this.rootNamespaces);
-        this.definition = _schemasToDefinition(this.wsdlObj.definitions.types.schema, this.schemaNamespaces);
+        this.typesNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, this.rootNamespaces);
+        this.definition = _xsdSchemasToDefinition(this.wsdlObj.definitions.types.schema, this.typesNamespaces);
         this.services = _extractServices(this.wsdlObj.definitions);
         this.soapParser = new XMLUtils(this.definition);
+        this.schemaXML = _generateXsdSchemaXML(this.wsdlObj, this.typesNamespaces);
+        if(validatedXsd) {
+            this.xsdValidator = xsd.parse(this.schemaXML);
+        }
     }
 
     getDefinition() {
         return this.definition;
     }
 
-    getSchemaXML(index = 0) {
-        var schemaObj = {
-            schema: this.wsdlObj.definitions.types.schema[index]
-        };
-
-        // Add all names to all schema elements
-        var xmlutils2 = new XMLUtils({ schema$attributes: this.schemaNamespaces });
-        var schemaXml = xmlutils2.toXML(schemaObj, "schema");
-        return schemaXml;
+    getSchemaXML() {
+        return this.schemaXML;
     }
 
     getSampleRequest(service, binding, operation) {
@@ -77,11 +75,51 @@ class WSDLUtils {
     getOperations() {
 
     }
+
     getEndpoints() {
 
     }
-    validateMessage(elementName, message) {
 
+    validateMessage(xmlMessage) {
+        if(!this.xsdValidator)  {
+            throw new Error("XSD Validation has been disabled");
+        }
+
+        var validationErrors = this.xsdValidator.validate(xmlMessage);
+        var errors = [];
+        if(validationErrors) {
+            var xmlLines = xmlMessage.split(/\r?\n/);
+            validationErrors.forEach(function(error) {
+                var level = "";
+                if(error.level === 1) {
+                    level = "warning";
+
+                } else if(error.level === 2) {
+                    level = "error";
+
+                } else if(error.level === 3) {
+                    level = "fatal";
+                }
+
+                errors.push({ message: error.message, level: level, line: error.line, column: error.column });
+
+                // TODO: Implement error context
+                /* console.log(status + "(" + error.line + ":" + error.column + "): " + error.message);
+                var line_start = error.line > 2 ? error.line - 2 : 0;
+                var line_end = error.line < xmlLines.length - 3 ? error.line + 3 : xmlLines.length;
+
+                var lines = xmlLines.slice(line_start, error.line - 1)
+                    .concat(">>" + xmlLines.slice(error.line - 1, error.line)[0].replace(/^\s\s/, ''))
+                    .concat(xmlLines.slice(error.line + 1, line_end));
+
+                console.log(lines.join("\n")); */
+            });
+
+            return errors;
+
+        } else {
+            return undefined;
+        }
     }
 }
 
@@ -121,9 +159,20 @@ function _extractServices(wsdlRoot) {
     return result;
 }
 
+function _generateXsdSchemaXML(wsdlObj, schemaNamespaces, index = 0) {
+    var schemaObj = {
+        schema: wsdlObj.definitions.types.schema[index]
+    };
+
+    // Add all names to all schema elements
+    var xmlutils2 = new XMLUtils({ schema$attributes: schemaNamespaces });
+    var schemaXml = xmlutils2.toXML(schemaObj, "schema", 2, true, false, true);
+    return schemaXml;
+}
+
 
 // http://www.w3schools.com/xml/schema_elements_ref.asp
-function _schemasToDefinition(schemas, namespaces) {
+function _xsdSchemasToDefinition(schemas, namespaces) {
     // TODO: Read namespaces from all levels
     // Make reverse lookup possible
     var namespaceToAlias = {};
@@ -135,7 +184,7 @@ function _schemasToDefinition(schemas, namespaces) {
     var typeLookupMap = {};
     schemas.forEach(function (schema) {
         var targetNamespace = schema.$targetNamespace; // TODO: Default to value
-        var targetNamespaceAlias = namespaceToAlias[targetNamespace] || ""; // TODO: Die if we can't find the namespace
+        var targetNamespaceAlias = namespaceToAlias[targetNamespace];
         if(!targetNamespaceAlias) {
             throw new Error("Unable to find alias for target namespace");
         }
@@ -163,7 +212,7 @@ function _schemasToDefinition(schemas, namespaces) {
             // TODO: Optimize namespaces so we include the needed ones
             result[element.$name + "$attributes"] = {};
             Object.keys(elementNamespaces).forEach(function (key) {
-                result[element.$name + "$attributes"]["xmlns:" + key] = elementNamespaces[key];
+                result[element.$name + "$attributes"][key] = elementNamespaces[key];
             });
 
             // Generate definition for element and copy it to result
@@ -173,7 +222,7 @@ function _schemasToDefinition(schemas, namespaces) {
                 if(!elementFormQualified) {
                     // TODO: sent on root object so we can extract it later
                     // Set namespace on root elements if the elementForm == Unqualified
-                    result[key + "$namespace"] = namespaceToAlias[targetNamespace];
+                    result[key + "$namespace"] = namespaceToAlias[targetNamespace].replace(/^xmlns:/, '');
                 }
             });
         });
@@ -185,7 +234,7 @@ function _schemasToDefinition(schemas, namespaces) {
 function _extractAndAddNamespaces(element, originalNamespaces) {
     var namespaces = originalNamespaces ? Object.assign({}, originalNamespaces) : {};
     Object.keys(element).forEach(function(key) {
-        var ns = key.match(/^\$xmlns:(.+)$/);
+        var ns = key.match(/^\$(xmlns:.+)$/);
         if (ns) {
             namespaces[ns[1]] = element[key];
         }
@@ -268,8 +317,8 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
 
                 } else {
                     // Look up type if it's not a xsd native type
-                    var subElement = typeLookupMap["#" + type];
-                    var subXsdType = typeLookupMap["#" + type + "$xsdType"];
+                    var subElement = typeLookupMap["#" + "xmlns:"+ type];
+                    var subXsdType = typeLookupMap["#" + "xmlns:" + type + "$xsdType"];
                     if (subElement) {
                         if (subXsdType === "complexType" || subXsdType === "element") {
                             subResult = _elementToDefinition(subXsdType, subElement, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
@@ -332,7 +381,7 @@ function _elementToDefinition(xsdType, element, targetNamespace, elementFormQual
 
         if(elementFormQualified) {
             // Save namespace
-            result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace];
+            result[element.$name + "$namespace"] = namespaceToAlias[targetNamespace].replace(/^xmlns:/, '');
         }
 
         var maxOccurs = parseInt(element.$maxOccurs ===  "unbounded" ? Number.MAX_VALUE : (element.$maxOccurs || 0));
@@ -391,8 +440,8 @@ function _namespaceLookup(name, namespaces) {
     var result;
     var ns = name.split(":");
     if (ns.length > 1) {
-        if (namespaces.hasOwnProperty(ns[0])) {
-            result = { name: ns[1], ns: namespaces[ns[0]] };
+        if (namespaces.hasOwnProperty("xmlns:" + ns[0])) {
+            result = { name: ns[1], ns: namespaces["xmlns:" + ns[0]] };
 
         } else {
             throw new Error("Could not find namespace alias '" + name + "'");

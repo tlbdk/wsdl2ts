@@ -12,7 +12,9 @@ var xsd = require('libxml-xsd');
 
 //TODO: http://www.w3schools.com/xml/schema_facets.asp , support validations
 
-describe('_schemasToDefinition', function () {
+// WSDL Samples: http://www.visualwebservice.com/examples.html
+
+describe('_xsdSchemasToDefinition', function () {
     it('Most used XSD types', function () {
         var wsdl_sample =
             "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
@@ -24,9 +26,7 @@ describe('_schemasToDefinition', function () {
             "      <xs:element name=\"simple\">\n" +
             "        <xs:simpleType>\n" +
             "          <xs:restriction base=\"xs:string\">\n" +
-            "            <xs:pattern>\n" +
-            "              <xs:value>[a-zA-Z0-9]{8}</xs:value>\n" +
-            "            </xs:pattern>\n" +
+            "            <xs:pattern value=\"[a-zA-Z0-9]{8}\" />\n" +
             "          </xs:restriction>\n" +
             "        </xs:simpleType>\n" +
             "      </xs:element>\n" +
@@ -47,14 +47,14 @@ describe('_schemasToDefinition', function () {
             "            </xs:element>\n" +
             "            <xs:element name=\"tickerSymbol2\" type=\"xs:string\">\n" +
             "            </xs:element>\n" +
+            "            <xs:element name=\"plainArray\" type=\"xs:string\" minOccurs=\"0\" maxOccurs=\"2\">\n" +
+            "            </xs:element>\n" +
             "          </xs:sequence>\n" +
             "        </xs:complexType>\n" +
             "      </xs:element>\n" +
             "      <xs:element name=\"refrencedComplexSequence\" type=\"myns:tickerType\">\n" +
             "      </xs:element>\n" +
             "      <xs:element name=\"refrencedSimpleRestriction\" type=\"myns:verySimpleType\">\n" +
-            "      </xs:element>\n" +
-            "      <xs:element name=\"plainArray\" type=\"xs:string\" minOccurs=\"0\" maxOccurs=\"2\">\n" +
             "      </xs:element>\n" +
             "      <xs:complexType name=\"tickerType\">\n" +
             "        <xs:sequence>\n" +
@@ -77,9 +77,6 @@ describe('_schemasToDefinition', function () {
             plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             plain$type: "string",
             plain$namespace: "myns",
-            plainArray$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
-            plainArray$type: ["string", 0, 2],
-            plainArray$namespace: "myns",
             simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             simple$type: "string",
             simple$namespace: "myns",
@@ -92,13 +89,15 @@ describe('_schemasToDefinition', function () {
                 tickerSymbolb$namespace: "myns",
             },
             complexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
-            complexSequence$order: ["tickerSymbol1", "tickerSymbol2"],
+            complexSequence$order: ["tickerSymbol1", "tickerSymbol2", "plainArray"],
             complexSequence$namespace: "myns",
             complexSequence: {
                 tickerSymbol1$type: "string",
                 tickerSymbol1$namespace: "myns",
                 tickerSymbol2$type: "string",
                 tickerSymbol2$namespace: "myns",
+                plainArray$type: ["string", 0, 2],
+                plainArray$namespace: "myns"
             },
             refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
             refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
@@ -196,10 +195,10 @@ describe('xsdToDefinition test', function () {
     });
 });
 
-describe("getSchemaXML", function() {
-    it("extract XSD and validate request", function () {
-        var wsdl_sample = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
+describe("xml validation", function() {
+    var wsdl_sample = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
 
+    it("extract XSD and validate request", function () {
         var expected_definition = {
             TradePrice$attributes: {
                 "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
@@ -241,6 +240,34 @@ describe("getSchemaXML", function() {
         var validationErrors = schema.validate(sample_xml);
         assert.equal(null, validationErrors);
     });
+
+    it("validateMessage OK", function () {
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+
+        var xmlSample = [
+            '<xsd1:TradePriceRequest xmlns:tns="http://example.com/stockquote.wsdl" xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '<tickerSymbol>GOOG</tickerSymbol>',
+            '</xsd1:TradePriceRequest>'
+        ].join("\n");
+
+        var errors = wsdlutils.validateMessage(xmlSample);
+        assert.isUndefined(errors);
+    });
+
+    it("validateMessage FAIL", function () {
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+
+        var xmlSample = [
+            '<xsd1:TradePriceRequest xmlns:tns="http://example.com/stockquote.wsdl" xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '<tickerSymbol1>GOOG</tickerSymbol1>',
+            '</xsd1:TradePriceRequest>'
+        ].join("\n");
+
+        var errors = wsdlutils.validateMessage(xmlSample);
+        assert.isTrue(errors.length > 0);
+        assert.isTrue(errors[0].message.startsWith("Element 'tickerSymbol1'"))
+    });
+
 });
 
 describe("sampleRequestResponse", function() {
