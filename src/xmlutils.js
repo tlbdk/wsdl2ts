@@ -7,7 +7,7 @@ class XMLUtils {
         this._definition = definition;
     }
 
-    toXML(obj, rootName, indentation, optimizeEmpty, convertTypes = true) {
+    toXML(obj, rootName, indentation, optimizeEmpty = false, convertTypes = true) {
         return _toXML(obj, this._definition, rootName, indentation, optimizeEmpty, convertTypes);
     }
 
@@ -38,7 +38,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
     } else if(definition[parentName + "$namespace"]) {
         namespace = definition[parentName + "$namespace"] + ":";
     }
-    var attributes = definition[parentName + "$attributes"] || {};
+    var attributes = Object.assign({}, definition[parentName + "$attributes"] || {});
     var order = obj[parentName + "$order"] || definition[parentName + "$order"];
     var type = obj[parentName + "$type"] || definition[parentName + "$type"];
 
@@ -76,7 +76,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
 
         let subResult = "";
         keys.forEach(function(key) {
-            if(key === "$") {
+            if(key === "$") { // TODO: Support data before and after
                 subResult += obj[key];
 
             } else if(key === "namespace$") {
@@ -98,8 +98,14 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
         Object.getOwnPropertyNames(attributes).forEach(function(key){
             result += " " + key + '="' + attributes[key] + '"';
         });
-        result += obj["$"] ? ">" + subResult : ">\n" + subResult + whitespace;
-        result += "</" + namespace + parentName + ">" + (level > 0 ? "\n" : "");
+
+        if(!obj["$"] && subResult === "" && optimizeEmpty) {
+            result += " />\n";
+
+        } else {
+            result += obj["$"] ? (">" + subResult) : (">\n" + subResult + whitespace);
+            result += "</" + namespace + parentName + ">" + (level > 0 ? "\n" : "");
+        }
 
     } else {
         result += whitespace + "<" + namespace +  parentName;
