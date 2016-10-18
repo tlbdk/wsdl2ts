@@ -48,10 +48,13 @@ class SoapClient {
 
     }
 
-    validateMessage(elementName, message) {
-
+    getSampleRequest(service, binding, operation) {
+        return this.wsdlutils.getSampleRequest(service, binding, operation);
     }
 
+    getSampleResponse(service, binding, operation) {
+        return this.wsdlutils.getSampleResponse(service, binding, operation);
+    }
 
 
     // [ { service: , port:, operation: , input:, output: } ]

@@ -66,6 +66,16 @@ class WSDLUtils {
         return this.soapParser.generateSample(typeName);
     }
 
+    generateRequest(service, binding, operation, message) {
+        let typeName = this.services[service][binding][operation].input.replace(/^[^:]+:/, "");
+        return this.soapParser.toXML(message, typeName);
+    }
+
+    generateResponse(service, binding, operation, message) {
+        let typeName = this.services[service][binding][operation].output.replace(/^[^:]+:/, "");
+        return this.soapParser.toXML(message, typeName);
+    }
+
 
     // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
     getServices() {
@@ -83,6 +93,9 @@ class WSDLUtils {
     validateMessage(xmlMessage) {
         if(!this.xsdValidator)  {
             throw new Error("XSD Validation has been disabled");
+        }
+        if(typeof xmlMessage !== "string") {
+            throw new Error("XML text needs to come as a string");
         }
 
         var validationErrors = this.xsdValidator.validate(xmlMessage);
@@ -148,7 +161,7 @@ function _extractServices(wsdlRoot) {
                 })[0];
                 result[service.$name][bindingName][operation.$name]['input'] = inputMessage.part[0].$element;
 
-                var outputMessageName = operation.input.$message.replace(/^[^:]+:/, ""); // Remove namespace
+                var outputMessageName = operation.output.$message.replace(/^[^:]+:/, ""); // Remove namespace
                 var outputMessage = wsdlRoot.message.filter(function(message) {
                     return message.$name === outputMessageName;
                 })[0];
@@ -209,11 +222,16 @@ function _xsdSchemasToDefinition(schemas, namespaces) {
             var elementNamespaces = _extractAndAddNamespaces(schema, schemaNamespaces);
 
             // Save namespaces
-            // TODO: Optimize namespaces so we include the needed ones
             result[element.$name + "$attributes"] = {};
             Object.keys(elementNamespaces).forEach(function (key) {
-                result[element.$name + "$attributes"][key] = elementNamespaces[key];
+                if(!["xmlns:tns", "xmlns:soap", "xmlns:xs"].includes(key)) {
+                    result[element.$name + "$attributes"][key] = elementNamespaces[key];
+                }
             });
+
+            if(Object.keys(result[element.$name + "$attributes"]).length == 0) {
+                delete result[element.$name + "$attributes"];
+            }
 
             // Generate definition for element and copy it to result
             var definition = _elementToDefinition("element", element, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, elementNamespaces);
@@ -225,6 +243,8 @@ function _xsdSchemasToDefinition(schemas, namespaces) {
                     result[key + "$namespace"] = namespaceToAlias[targetNamespace].replace(/^xmlns:/, '');
                 }
             });
+
+            /// TODO: Optimize namespaces so we only include the needed ones, by look at the returned definition
         });
     });
 
@@ -243,6 +263,7 @@ function _extractAndAddNamespaces(element, originalNamespaces) {
 }
 
 function _elementToDefinition(xsdType, element, targetNamespace, elementFormQualified, attributeFormQualified, typeLookupMap, namespaces){
+    // TODO: Find out if a namespace shadows another one higher up
     var elementNamespaces = _extractAndAddNamespaces(element, namespaces);
 
     // Make reverse lookup possible

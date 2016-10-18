@@ -74,13 +74,13 @@ describe('_xsdSchemasToDefinition', function () {
             "</definitions>";
 
         var expected_definition = {
-            plain$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            plain$attributes: { "xmlns:myns": "http://tempuri.org" },
             plain$type: "string",
             plain$namespace: "myns",
-            simple$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            simple$attributes: { "xmlns:myns": "http://tempuri.org" },
             simple$type: "string",
             simple$namespace: "myns",
-            complexAll$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            complexAll$attributes: { "xmlns:myns": "http://tempuri.org" },
             complexAll$namespace: "myns",
             complexAll: {
                 tickerSymbola$type: "string",
@@ -88,7 +88,7 @@ describe('_xsdSchemasToDefinition', function () {
                 tickerSymbolb$type: "string",
                 tickerSymbolb$namespace: "myns",
             },
-            complexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            complexSequence$attributes: { "xmlns:myns": "http://tempuri.org" },
             complexSequence$order: ["tickerSymbol1", "tickerSymbol2", "plainArray"],
             complexSequence$namespace: "myns",
             complexSequence: {
@@ -99,7 +99,7 @@ describe('_xsdSchemasToDefinition', function () {
                 plainArray$type: ["string", 0, 2],
                 plainArray$namespace: "myns"
             },
-            refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            refrencedComplexSequence$attributes: { "xmlns:myns": "http://tempuri.org" },
             refrencedComplexSequence$order: ["tickerSymbolx", "tickerSymboly"],
             refrencedComplexSequence$namespace: "myns",
             refrencedComplexSequence: {
@@ -108,7 +108,7 @@ describe('_xsdSchemasToDefinition', function () {
                 tickerSymboly$type: "string",
                 tickerSymboly$namespace: "myns",
             },
-            refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org", "xmlns:xs": "http://www.w3.org/2001/XMLSchema" },
+            refrencedSimpleRestriction$attributes: { "xmlns:myns": "http://tempuri.org" },
             refrencedSimpleRestriction$length: [0,3],
             refrencedSimpleRestriction$type: "string",
             refrencedSimpleRestriction$namespace: "myns",
@@ -141,7 +141,6 @@ describe('xsdToDefinition test', function () {
 
         var expected_definition = {
             MyElement$attributes: {
-                "xmlns:xs":  "http://www.w3.org/2001/XMLSchema",
                 "xmlns:myns": "http://tempuri.org"
             },
             MyElement$namespace: "myns",
@@ -182,8 +181,7 @@ describe('xsdToDefinition test', function () {
                 tickerSymbol2$type: "string",
             },
             MyElement$attributes: {
-                "xmlns:myns": "http://tempuri.org",
-                "xmlns:xs": "http://www.w3.org/2001/XMLSchema"
+                "xmlns:myns": "http://tempuri.org"
             },
             MyElement$namespace: "myns",
             MyElement$order: ["tickerSymbol1", "tickerSymbol2"]
@@ -201,9 +199,6 @@ describe("xml validation", function() {
     it("extract XSD and validate request", function () {
         var expected_definition = {
             TradePrice$attributes: {
-                "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
-                "xmlns:tns": "http://example.com/stockquote.wsdl",
-                "xmlns:xs": "http://www.w3.org/2001/XMLSchema",
                 "xmlns:xsd1": "http://example.com/stockquote.xsd"
             },
             TradePrice$namespace: "xsd1",
@@ -211,9 +206,6 @@ describe("xml validation", function() {
                 price$type: "float"
             },
             TradePriceRequest$attributes: {
-                "xmlns:soap": "http://schemas.xmlsoap.org/wsdl/soap/",
-                "xmlns:tns": "http://example.com/stockquote.wsdl",
-                "xmlns:xs": "http://www.w3.org/2001/XMLSchema",
                 "xmlns:xsd1": "http://example.com/stockquote.xsd"
             },
             TradePriceRequest$namespace: "xsd1",
@@ -270,7 +262,7 @@ describe("xml validation", function() {
 
 });
 
-describe("sampleRequestResponse", function() {
+describe("Generate sample Request/Response json/xml", function() {
     var wsdl_sample = fs.readFileSync(__dirname + "/../examples/StockQuote.wsdl", 'utf8');
 
     it("getServices", function () {
@@ -279,7 +271,7 @@ describe("sampleRequestResponse", function() {
                 StockQuoteBinding: {
                     GetLastTradePrice: {
                         input: "xsd1:TradePriceRequest",
-                        output: "xsd1:TradePriceRequest"
+                        output: "xsd1:TradePrice"
                     }
                 }
             }
@@ -290,14 +282,61 @@ describe("sampleRequestResponse", function() {
     });
 
     it("getSampleRequest", function () {
-        var expectedDefinition = {
+        var expectedRequest = {
             TradePriceRequest: {
                 tickerSymbol: " "
             }
         };
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var definition = wsdlutils.getSampleRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
-        assert.deepEqual(definition, expectedDefinition);
+        var generatedRequest = wsdlutils.getSampleRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
+        assert.deepEqual(generatedRequest, expectedRequest);
+    });
+
+    it("getSampleResponse", function () {
+        var expectedResponse = {
+            TradePrice: {
+                price: 0
+            }
+        };
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+        var generatedResponse = wsdlutils.getSampleResponse("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice");
+        assert.deepEqual(generatedResponse, expectedResponse);
+    });
+
+    it("generateRequest", function () {
+        var request = {
+            TradePriceRequest: {
+                tickerSymbol: "GOOG"
+            }
+        };
+
+        var expectedRequest = [
+            '<xsd1:TradePriceRequest xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '  <tickerSymbol>GOOG</tickerSymbol>',
+            '</xsd1:TradePriceRequest>'
+        ].join("\n");
+
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+        var generatedRequest = wsdlutils.generateRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice", request);
+        assert.equal(generatedRequest, expectedRequest);
+    });
+
+    it("generateResponse", function () {
+        var response = {
+            TradePrice: {
+                price: 0
+            }
+        };
+
+        var expectedResponse = [
+            '<xsd1:TradePrice xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '  <price>0</price>',
+            '</xsd1:TradePrice>'
+        ].join("\n");
+
+        var wsdlutils = new WSDLUtils(wsdl_sample);
+        var generatedResponse = wsdlutils.generateResponse("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice", response);
+        assert.equal(generatedResponse, expectedResponse);
     });
 });
 
