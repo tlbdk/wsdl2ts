@@ -147,25 +147,31 @@ function _extractServices(wsdlRoot) {
 
             var binding = wsdlRoot.binding
                 .filter(function(binding) { return binding.$name === bindingName;})[0];
+
             var portTypeName = binding.$type.replace(/^[^:]+:/, ""); // Remove namespace
             var portType = wsdlRoot.portType
                 .filter(function(portType) { return portType.$name === portTypeName; })[0];
 
             result[service.$name][bindingName] = {};
-            portType.operation.forEach(function(operation) {
-                result[service.$name][bindingName][operation.$name] = {};
+            portType.operation.forEach(function(portTypeOperation) {
+                result[service.$name][bindingName][portTypeOperation.$name] = {};
 
-                var inputMessageName = operation.input.$message.replace(/^[^:]+:/, ""); // Remove namespace
+                var bindingOperation = binding.operation
+                    .filter(function(operation) { return operation.$name === portTypeOperation.$name;})[0];
+
+                result[service.$name][bindingName][portTypeOperation.$name]['action'] = bindingOperation.operation.$soapAction;
+
+                var inputMessageName = portTypeOperation.input.$message.replace(/^[^:]+:/, ""); // Remove namespace
                 var inputMessage = wsdlRoot.message.filter(function(message) {
                     return message.$name === inputMessageName;
                 })[0];
-                result[service.$name][bindingName][operation.$name]['input'] = inputMessage.part[0].$element;
+                result[service.$name][bindingName][portTypeOperation.$name]['input'] = inputMessage.part[0].$element;
 
-                var outputMessageName = operation.output.$message.replace(/^[^:]+:/, ""); // Remove namespace
+                var outputMessageName = portTypeOperation.output.$message.replace(/^[^:]+:/, ""); // Remove namespace
                 var outputMessage = wsdlRoot.message.filter(function(message) {
                     return message.$name === outputMessageName;
                 })[0];
-                result[service.$name][bindingName][operation.$name]['output'] = outputMessage.part[0].$element;;
+                result[service.$name][bindingName][portTypeOperation.$name]['output'] = outputMessage.part[0].$element;;
             });
         });
     });

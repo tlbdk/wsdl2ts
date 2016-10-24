@@ -270,6 +270,7 @@ describe("Generate sample Request/Response json/xml", function() {
             StockQuoteService: {
                 StockQuoteBinding: {
                     GetLastTradePrice: {
+                        action: "http://example.com/GetLastTradePrice",
                         input: "xsd1:TradePriceRequest",
                         output: "xsd1:TradePrice"
                     }
