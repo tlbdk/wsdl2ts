@@ -179,7 +179,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
         var nextObject = {};
         currentValue = ""; // TODO: Create $t value on object if this has data
 
-        if(ns) {
+        if(ns && definition[name + "$namespace"] !== ns) {
             if(inlineAttributes) {
                 nextObject["namespace" + "$"] = ns;
 
@@ -187,6 +187,11 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
                 currentObject[name + "$namespace"] = ns;
             }
         }
+
+        // Filter attributes so we only include ones not in definition
+        Object.keys(definition[name + "$attributes"] || {}).forEach((attribute) => {
+            delete attributes[attribute];
+        });
 
         // Handle attributes
         if(Object.getOwnPropertyNames(attributes).length > 0) {
@@ -206,7 +211,7 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
                     }
 
                 } else {
-                    if(Array.isArray(currentType)) { // TODO: Migrate to using string formatted definitions, fx. number[]
+                    if(Array.isArray(currentType)) {
                         currentObject[name + "$attributes"] = [attributes];
 
                     } else {
@@ -268,7 +273,10 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
             if(names.length < orders.length) {
                 var order = orders.pop();
                 if(order.length > 1) {
-                    currentObject[name + "$order"] = order;
+                    var definedOrder = definitions[definitions.length - 1][name + "$order"];
+                    if(!_compareArray(definedOrder, order)) {
+                        currentObject[name + "$order"] = order;
+                    }
                 }
             }
             names.pop();
@@ -318,7 +326,6 @@ function _fromXML (xml, objectDefinition, inlineAttributes, convertTypes) {
         } else {
             console.log("No objects in objects");
         }
-
 
         currentValue = "";
     });
@@ -384,6 +391,23 @@ function _xsdTypeLookup(type, length) {
         case "any": return {};
         default: throw new Error("Unknown XSD type '" + type + "'");
     }
+}
+
+function _compareArray(array1, array2) {
+    if (!array1 || !array2) {
+        return false;
+    }
+
+    if (array1.length != array2.length) {
+        return false;
+    }
+
+    for (let i=0; i < array1.length; i++) {
+        if(array1[i] !== array2[i]) {
+            return false;
+        }
+    }
+    return true;
 }
 
 module.exports = XMLUtils;
