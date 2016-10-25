@@ -11,7 +11,7 @@ class RemoteClient {
         //this.client.setAuthentication(authentication);
     }
     execute(request, validateRequest, validateResponse) {
-        var errors = validateRequest ? this.client.validateMessage("executeRequest", request) : false;
+        var errors = validateRequest ? this.client.validateMessage(request) : false;
         if (errors) {
             throw new Error("Requeat validation errors:\n" +  errors.join("\n");
         }
