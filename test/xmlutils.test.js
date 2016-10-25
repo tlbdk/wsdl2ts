@@ -412,6 +412,60 @@ describe('Sample generation', function () {
 });
 
 describe('Test soap envelope', function () {
+    const soapDefinition = {
+        Envelope$namespace: "soap",
+        Envelope$attributes: {
+            "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
+            "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding"
+        },
+        Envelope$order: ["Header", "Body"],
+        Envelope: {
+            Header$namespace: "soap",
+            Body$namespace: "soap",
+            Body: {
+                complexAll: {
+                    boolean1$type: "boolean",
+                },
+            }
+        }
+    };
+
+    var expectedSoapObj = {
+        Envelope: {
+            Header: "",
+            Body: {
+                complexAll: {
+                    boolean1: true,
+                }
+            }
+        }
+    };
+
+    var expectedSoapXml = [
+        '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">',
+        '  <soap:Header />',
+        '  <soap:Body>',
+        '    <complexAll>',
+        '      <boolean1>true</boolean1>',
+        '    </complexAll>',
+        '  </soap:Body>',
+        '</soap:Envelope>',
+    ].join("\n");
+
+    var soapXmlUtils = new XMLUtils(soapDefinition);
+
+    it('to', function () {
+        var generatedSoapXml = soapXmlUtils.toXML(expectedSoapObj, "Envelope", 2, true);
+        assert.strictEqual(generatedSoapXml, expectedSoapXml);
+    });
+
+    it('from', function () {
+        var generatedSoapObj = soapXmlUtils.fromXML(expectedSoapXml);
+        assert.deepEqual(generatedSoapObj, expectedSoapObj);
+    });
+});
+
+describe('Test soap envelope', function () {
     const definition = {
         complexAll: {
             xmlBlob$type: "xml",
