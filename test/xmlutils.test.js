@@ -411,3 +411,30 @@ describe('Sample generation', function () {
     });
 });
 
+describe('Test soap envelope', function () {
+    const definition = {
+        complexAll: {
+            xmlBlob$type: "xml",
+        }
+    };
+
+    var expectedXml = [
+        '<complexAll>',
+        '  <xmlBlob>',
+        '    <myxml>stuff</myxml>',
+        '  </xmlBlob>',
+        '</complexAll>',
+    ].join("\n");
+
+    var obj = {
+        complexAll: {
+            xmlBlob: "<myxml>stuff</myxml>"
+        }
+    };
+
+    it('to', function () {
+        var xmlUtils = new XMLUtils(definition);
+        var generatedXml = xmlUtils.toXML(obj, "complexAll");
+        assert.strictEqual(generatedXml, expectedXml);
+    });
+});
