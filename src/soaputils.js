@@ -25,7 +25,7 @@ const soapDefinition = {
 class SoapClient {
     constructor(wsdlString) {
         this.wsdlutils = new WSDLUtils(wsdlString);
-        this.endpoint = ""; // TODO
+        this.endpoint = "http://localhost:8080/"; // TODO
     }
 
     static fromUrl(wsdlUrl) {
@@ -44,8 +44,25 @@ class SoapClient {
 
     }
 
-    invoke (service, port, operation) {
 
+    invoke (serviceName, binding, operation) {
+        var services = this.wsdlutils.getServices();
+        var soapAction = services[serviceName][binding][operation].action;
+        var headers = {
+            'Content-Type': 'application/soap+xml; charset=utf-8',
+            'Content-Length': Buffer.byteLength(data),
+            'Accept': 'text/xml',
+            'SOAPAction': soapAction,
+        };
+
+        var data = ""; // TODO
+        this._httpPostString(this.endpoint, data, headers)
+            .then((response) => {
+                console.info(response);
+            })
+            .catch((error) => {
+               console.info(error);
+            });
     }
 
     getSampleRequest(service, binding, operation) {
@@ -56,15 +73,46 @@ class SoapClient {
         return this.wsdlutils.getSampleResponse(service, binding, operation);
     }
 
-
-    // [ { service: , port:, operation: , input:, output: } ]
-    getOperations() {
-
+    // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
+    getServices() {
+        this.wsdlutils.getServices();
     }
 
-    // [ "http://..", "http://" ]
-    getEndpoints() {
 
+    static _httpPostString(uri, data, headers = null) {
+        return new Promise(function(resolve, reject) {
+            var curl = url.parse(uri);
+            var requestOptions = {
+                host: curl.hostname,
+                port: curl.port,
+                path: curl.path,
+                method: "POST",
+                withCredentials: false,
+                headers: headers
+            };
+            var req = http.request(requestOptions, (res) => {
+                var responseContent = "";
+                res.setEncoding('utf8');
+                res.on('data', function(chunk) {
+                    responseContent += chunk;
+                });
+                res.on('end', function() {
+                    resolve(responseContent);
+                });
+
+                if(res.statusCode === 200) {
+                    resolve(data);
+
+                } else {
+                    reject({ error: `POST request '${url}' returned status code ${res.statusCode}`, data: responseContent });
+                }
+            });
+            req.on('error', (e) => {
+                console.log(`problem with request: ${e.message}`);
+            });
+            req.write(data);
+            req.end();
+        });
     }
 
     static _httpGetString(uri) {
