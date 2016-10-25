@@ -118,6 +118,11 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
         if(obj === "" && optimizeEmpty) {
             result += " />\n";
 
+       } else if(convertTypes && type === 'xml') {
+            result += ">\n"
+                + whitespace.repeat(2) + obj.replace(/\n/g, "\n" + whitespace.repeat(2)) + "\n"
+                + whitespace + "</" + namespace + parentName + ">\n";
+
         } else {
             result += ">" + escapeValue(obj) + "</" + namespace + parentName + ">\n";
         }
