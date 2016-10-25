@@ -42,14 +42,19 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
     var order = obj[parentName + "$order"] || definition[parentName + "$order"];
     var type = obj[parentName + "$type"] || definition[parentName + "$type"];
 
+    var whitespace = " ".repeat(level * indentation);
+
     if(level === 0) {
         // Go into first level
         obj = obj[parentName];
     }
 
-    var whitespace = " ".repeat(level * indentation);
+    if(typeof obj === undefined || obj === null) {
+        // TODO: Handle null types
+        return result;
+    }
 
-    if(convertTypes && obj !== undefined && obj !== null) {
+    if(convertTypes) {
         if(type === "base64Binary") {
             obj = Buffer.from(obj).toString('base64');
 
@@ -58,10 +63,7 @@ function _toXML (obj, definition, parentName, indentation, optimizeEmpty, conver
         }
     }
 
-    if(typeof obj === undefined || obj === null) {
-        // TODO: Handle null types
-
-    } else if(Array.isArray(obj)) {
+    if(Array.isArray(obj)) {
         obj.forEach(function(value) {
             result += _toXML(value, definition, namespace + parentName, indentation, optimizeEmpty, convertTypes, level);
         });
