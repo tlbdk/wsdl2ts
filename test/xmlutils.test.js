@@ -390,10 +390,10 @@ describe('Sample generation', function () {
             complexAllLength$namespace: "myns",
             complexAllLength: {
                 tickerSymbola$type: "string",
-                tickerSymbola$length: [10, 10],
+                tickerSymbola$length: [10, 10], // String of length 10
                 tickerSymbola$namespace: "myns",
-                tickerSymbolb$type: ["string", 2, 2],
-                tickerSymbolb$length: [1, 1],
+                tickerSymbolb$type: ["string", 2, 2], // String array with length of 2
+                tickerSymbolb$length: [1, 1], // Item length of 1
                 tickerSymbolb$namespace: "myns",
             }
         };
