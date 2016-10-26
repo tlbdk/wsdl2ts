@@ -312,7 +312,7 @@ describe("Generate sample Request/Response json/xml", function() {
         };
 
         var expectedRequest = [
-            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">',
+            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
             '  <soap:Header />',
             '  <soap:Body>',
             '    <xsd1:TradePriceRequest xmlns:xsd1="http://example.com/stockquote.xsd">',
@@ -335,7 +335,7 @@ describe("Generate sample Request/Response json/xml", function() {
         };
 
         var expectedResponse = [
-            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">',
+            '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">',
             '  <soap:Header />',
             '  <soap:Body>',
             '    <xsd1:TradePrice xmlns:xsd1="http://example.com/stockquote.xsd">',

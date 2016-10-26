@@ -38,8 +38,7 @@ class WSDLUtils {
         var soapDefinition = {
             "Envelope$namespace": "soap",
             "Envelope$attributes": {
-                "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
-                "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding"
+                "xmlns:soap": "http://schemas.xmlsoap.org/soap/envelope/"
             },
             "Envelope$order": ["Header", "Body"],
             "Envelope": {
