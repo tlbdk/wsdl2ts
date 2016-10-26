@@ -9,9 +9,9 @@ let WSDLUtils = require('../src/wsdlutils.js');
 // TODO: Kerberos authentication
 
 class SoapClient {
-    constructor(wsdlString, endPointUrl) {
+    constructor(wsdlString, url) {
         this.wsdlutils = new WSDLUtils(wsdlString);
-        this.endpoint = endPointUrl;
+        this.endpoint = url;
     }
 
     static fromUrl(wsdlUrl) {
@@ -27,9 +27,8 @@ class SoapClient {
     }
 
     setEndpoint(url) {
-
+        this.endpoint = url;
     }
-
 
     invoke(serviceName, binding, operation, message) {
         var services = this.wsdlutils.getServices();
@@ -63,9 +62,8 @@ class SoapClient {
 
     // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
     getServices() {
-        this.wsdlutils.getServices();
+        return this.wsdlutils.getServices();
     }
-
 
     _httpPostString(url, data, headers = null) {
         return new Promise(function(resolve, reject) {
