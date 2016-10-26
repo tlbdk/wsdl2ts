@@ -115,7 +115,7 @@ describe('_xsdSchemasToDefinition', function () {
         };
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var definition = wsdlutils.getDefinition();
+        var definition = wsdlutils.getSchemaDefinition();
         assert.deepEqual(definition, expected_definition);
     });
 
@@ -149,7 +149,7 @@ describe('xsdToDefinition test', function () {
         };
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var definition = wsdlutils.getDefinition();
+        var definition = wsdlutils.getSchemaDefinition();
         assert.deepEqual(definition, expected_definition);
     });
 
@@ -188,7 +188,7 @@ describe('xsdToDefinition test', function () {
         };
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var definition = wsdlutils.getDefinition();
+        var definition = wsdlutils.getSchemaDefinition();
         assert.deepEqual(definition, expected_definition);
     });
 });
@@ -215,7 +215,7 @@ describe("xml validation", function() {
         };
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var definition = wsdlutils.getDefinition();
+        var definition = wsdlutils.getSchemaDefinition();
         assert.deepEqual(definition, expected_definition);
 
         var sample_obj = {
@@ -312,31 +312,41 @@ describe("Generate sample Request/Response json/xml", function() {
         };
 
         var expectedRequest = [
-            '<xsd1:TradePriceRequest xmlns:xsd1="http://example.com/stockquote.xsd">',
-            '  <tickerSymbol>GOOG</tickerSymbol>',
-            '</xsd1:TradePriceRequest>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">',
+            '  <soap:Header />',
+            '  <soap:Body>',
+            '    <xsd1:TradePriceRequest xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '      <tickerSymbol>GOOG</tickerSymbol>',
+            '    </xsd1:TradePriceRequest>',
+            '  </soap:Body>',
+            '</soap:Envelope>'
         ].join("\n");
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var generatedRequest = wsdlutils.generateRequest("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice", request);
+        var generatedRequest = wsdlutils.generateSoapMessage(request);
         assert.equal(generatedRequest, expectedRequest);
     });
 
     it("generateResponse", function () {
         var response = {
             TradePrice: {
-                price: 0
+                price: 10
             }
         };
 
         var expectedResponse = [
-            '<xsd1:TradePrice xmlns:xsd1="http://example.com/stockquote.xsd">',
-            '  <price>0</price>',
-            '</xsd1:TradePrice>'
+            '<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope/" soap:encodingStyle="http://www.w3.org/2003/05/soap-encoding">',
+            '  <soap:Header />',
+            '  <soap:Body>',
+            '    <xsd1:TradePrice xmlns:xsd1="http://example.com/stockquote.xsd">',
+            '      <price>10</price>',
+            '    </xsd1:TradePrice>',
+            '  </soap:Body>',
+            '</soap:Envelope>'
         ].join("\n");
 
         var wsdlutils = new WSDLUtils(wsdl_sample);
-        var generatedResponse = wsdlutils.generateResponse("StockQuoteService", "StockQuoteBinding", "GetLastTradePrice", response);
+        var generatedResponse = wsdlutils.generateSoapMessage(response);
         assert.equal(generatedResponse, expectedResponse);
     });
 });

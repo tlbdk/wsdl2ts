@@ -35,21 +35,41 @@ const wsdlDefinition = {
 
 class WSDLUtils {
     constructor(wsdlString, validatedXsd = true) {
+        var soapDefinition = {
+            "Envelope$namespace": "soap",
+            "Envelope$attributes": {
+                "xmlns:soap": "http://www.w3.org/2003/05/soap-envelope/",
+                "soap:encodingStyle": "http://www.w3.org/2003/05/soap-encoding"
+            },
+            "Envelope$order": ["Header", "Body"],
+            "Envelope": {
+                "Header$namespace": "soap",
+                "Body$namespace": "soap"
+            }
+        };
+
         this.wsdlParser = new XMLUtils(wsdlDefinition);
         this.wsdlObj = this.wsdlParser.fromXML(wsdlString, true);
-        this.rootNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions);
-        this.typesNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, this.rootNamespaces);
-        this.definition = _xsdSchemasToDefinition(this.wsdlObj.definitions.types.schema, this.typesNamespaces);
         this.services = _extractServices(this.wsdlObj.definitions);
-        this.soapParser = new XMLUtils(this.definition);
-        this.schemaXML = _generateXsdSchemaXML(this.wsdlObj, this.typesNamespaces);
+        // Extract XSD schemas
+        var rootNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions);
+        var typesNamespaces = _extractAndAddNamespaces(this.wsdlObj.definitions.types, rootNamespaces);
+        this.schemaDefinition = _xsdSchemasToDefinition(this.wsdlObj.definitions.types.schema, typesNamespaces);
+        this.schemaParser = new XMLUtils(this.schemaDefinition);
+
+        // Inject schemaDefinition so we can decode a SOAP message directly
+        soapDefinition.Envelope.Body = this.schemaDefinition;
+        this.soapParser = new XMLUtils(soapDefinition);
+
+
+        this.schemaXML = _generateXsdSchemaXML(this.wsdlObj, typesNamespaces);
         if(validatedXsd) {
             this.xsdValidator = xsd.parse(this.schemaXML);
         }
     }
 
-    getDefinition() {
-        return this.definition;
+    getSchemaDefinition() {
+        return this.schemaDefinition;
     }
 
     getSchemaXML() {
@@ -58,24 +78,22 @@ class WSDLUtils {
 
     getSampleRequest(service, binding, operation) {
         let typeName = this.services[service][binding][operation].input.replace(/^[^:]+:/, "");
-        return this.soapParser.generateSample(typeName);
+        return this.schemaParser.generateSample(typeName);
     }
 
     getSampleResponse(service, binding, operation) {
         let typeName = this.services[service][binding][operation].output.replace(/^[^:]+:/, "");
-        return this.soapParser.generateSample(typeName);
+        return this.schemaParser.generateSample(typeName);
     }
 
-    generateRequest(service, binding, operation, message) {
-        let typeName = this.services[service][binding][operation].input.replace(/^[^:]+:/, "");
-        return this.soapParser.toXML(message, typeName);
+    generateSoapMessage(message) {
+        return this.soapParser.toXML({
+            Envelope: {
+                Header: "",
+                Body: message
+            }
+        }, "Envelope", 2, true);
     }
-
-    generateResponse(service, binding, operation, message) {
-        let typeName = this.services[service][binding][operation].output.replace(/^[^:]+:/, "");
-        return this.soapParser.toXML(message, typeName);
-    }
-
 
     // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
     getServices() {
