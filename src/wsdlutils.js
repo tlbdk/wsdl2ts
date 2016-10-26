@@ -94,6 +94,10 @@ class WSDLUtils {
         }, "Envelope", 2, true);
     }
 
+    parseSoapMessage(xmlMessage) {
+        return this.soapParser.fromXML(xmlMessage);
+    }
+
     // { serviceName: { binding: { operation: { input: "messageName", output: "messageName" )
     getServices() {
         return this.services;
