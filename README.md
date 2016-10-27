@@ -10,6 +10,7 @@ SPNEGO - Windows:
 * https://github.com/annikulin/code-classifier/blob/9f3577bc2ac8efeca3c2c9cc9e0716518b2ca60b/naive_bayes/resources/js/mongodb_gssapi.js
 * http://serf.apache.org/
 * https://github.com/dblock/waffle
+* ftp://ftp.nist.gov/pub/mel/michalos/Software/MTConnectArchiver/MtConnectArchiver/authenticate.txt
 
 SPNEGO - Linux: 
 
