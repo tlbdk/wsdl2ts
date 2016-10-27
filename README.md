@@ -11,6 +11,7 @@ SPNEGO - Windows:
 * http://serf.apache.org/
 * https://github.com/dblock/waffle
 * ftp://ftp.nist.gov/pub/mel/michalos/Software/MTConnectArchiver/MtConnectArchiver/authenticate.txt
+* http://opensource.apple.com//source/neon/neon-11/neon/src/ne_sspi.c
 
 SPNEGO - Linux: 
 
