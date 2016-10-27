@@ -1,7 +1,5 @@
 'use strict';
 
-// SPNEGO linux: https://gist.github.com/dmansfield/c75817dcacc2393da0a7
-
 let urlParser = require('url');
 let http = require('http');
 let WSDLUtils = require('../src/wsdlutils.js');
