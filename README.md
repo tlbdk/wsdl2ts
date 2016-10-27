@@ -8,6 +8,7 @@ SPNEGO - Windows:
 * https://github.com/m4dc4p/rubysspi
 * https://github.com/christkv/kerberos/issues/51
 * http://serf.apache.org/
+* https://github.com/dblock/waffle
 
 SPNEGO - Linux: 
 
